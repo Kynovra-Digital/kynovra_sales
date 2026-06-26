@@ -44,6 +44,17 @@ yarn-error.log*
 # playwright
 playwright-report
 test-results
+.playwright-mcp
+
+# local AI/coding agents
+.agents/
+.codex/
+.opencode/
+AGENTS.md
+CLAUDE.md
+opencode.json
+opencode.jsonc
+opencode.backup.json
 
 # typescript
 *.tsbuildinfo
