@@ -1,0 +1,36 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - heading "Suporte Kynovra" [level=1] [ref=e5]
+        - paragraph [ref=e6]: Inicie um suporte ou continue um atendimento com codigo.
+        - generic [ref=e7]:
+          - textbox "Produto" [ref=e8]
+          - textbox "Motivo" [ref=e9]
+          - textbox "Outro motivo" [ref=e10]
+          - textbox "Mensagem inicial" [ref=e11]
+          - button "Iniciar suporte" [ref=e12]
+      - generic [ref=e13]:
+        - heading "Tenho um codigo de continuidade" [level=2] [ref=e14]
+        - textbox "KS-7F4A9Q-X2M8P" [ref=e15]
+        - button "Continuar atendimento" [ref=e16]
+        - paragraph [ref=e17]: Atendimento encerrado por limite de tempo.
+        - button "Iniciar novo suporte" [ref=e18]
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: Avaliação
+          - generic [ref=e21]:
+            - img [ref=e22]
+            - img [ref=e24]
+            - img [ref=e26]
+            - img [ref=e28]
+            - img [ref=e30]
+          - textbox "Comentario opcional" [ref=e32]
+          - generic [ref=e33]:
+            - button "Sim" [ref=e34]
+            - button "Parcialmente" [ref=e35]
+            - button "Não" [ref=e36]
+          - button "Enviar avaliação" [ref=e37]
+    - paragraph [ref=e39]: Powered by Kynovra Sales
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e45] [cursor=pointer]:
+    - img [ref=e46]

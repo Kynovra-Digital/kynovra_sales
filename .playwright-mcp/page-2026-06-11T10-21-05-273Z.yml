@@ -1,0 +1,30 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: KS
+        - generic [ref=e6]: Kynovra Sales
+      - generic [ref=e7]:
+        - heading "KYNOVRA SALES" [level=1] [ref=e8]
+        - paragraph [ref=e9]: A central inteligente para vender, atender e escalar operações digitais.
+        - paragraph [ref=e10]: Gerencie campanhas, atendimentos, agentes IA, suporte e conversões em tempo real com uma infraestrutura comercial premium.
+      - paragraph [ref=e11]: Ambiente seguro. Acesso monitorado pela Kynovra Sales.
+    - generic [ref=e13]:
+      - img [ref=e14]
+      - heading "Acesso restrito" [level=2] [ref=e18]
+      - paragraph [ref=e19]: Acesso restrito a membros autorizados.
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: E-mail
+          - textbox "E-mail" [ref=e23]:
+            - /placeholder: voce@empresa.com
+        - generic [ref=e24]:
+          - generic [ref=e25]: Senha
+          - textbox "Senha" [ref=e26]:
+            - /placeholder: ••••••••
+        - button "Entrar" [ref=e27]
+        - link "Esqueci minha senha" [ref=e28] [cursor=pointer]:
+          - /url: /forgot-password
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e34] [cursor=pointer]:
+    - img [ref=e35]

@@ -1,0 +1,38 @@
+[    3049ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/dashboard:0
+[    3547ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/162a_react-dom_1hsf_h5._.js:15305
+[    3844ms] Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at createServerClient (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/node_modules__pnpm_1ilepkc._.js:10607:15)
+    at updateSession (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/[root-of-the-server]__0-cc7yj._.js:83:329)
+    at proxy (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/[root-of-the-server]__0-cc7yj._.js:120:159)
+    at <unknown> (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/1es5_next_13cynr8._.js:19635:26)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_context_frame:63:14)
+    at <unknown> (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/1es5_next_13cynr8._.js:7107:633)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_context_frame:63:14)
+    at <unknown> (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/1es5_next_13cynr8._.js:7107:314)
+    at async adapter (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/.next/dev/server/chunks/1es5_next_13cynr8._.js:7061:16)
+    at async DevServer.runMiddleware (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/next-server.js:1192:26)
+    at async DevServer.runMiddleware (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/base-server.js:941:28)
+    at async (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/dev/next-dev-server.js:394:20)
+    at async Span.traceAsyncFn (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:366:33)
+    at async resolveRoutes (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:622:28)
+    at async handleRequest (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/lib/router-server.js:314:96)
+    at async requestHandlerImpl (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/lib/router-server.js:514:13)
+    at async Server.requestListener (file:///media/victorsouza/Repositorio/Projetos/kynovra_sales/node_modules/.pnpm/next@16.2.9_@babel+core@7.29.7_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_react-d_3515adf95e2883dbe3e637f06fd70f51/node_modules/next/dist/server/lib/start-server.js:225:13)
+[    3853ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1emej88._.js:1226
+[   19583ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1emej88._.js:1226
+[   19804ms] [LOG] [Fast Refresh] done in 321ms @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1emej88._.js:1226
+[   19930ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1emej88._.js:1226
+[   22697ms] [LOG] [Fast Refresh] done in 2867ms @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1emej88._.js:1226
+[   23318ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1_993wc._.js:2477
+[   23497ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1_993wc._.js:2477
+[   47121ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1_993wc._.js:2477
+[   47179ms] [LOG] [Fast Refresh] done in 161ms @ http://localhost:3000/_next/static/chunks/1es5_next_dist_1_993wc._.js:2477

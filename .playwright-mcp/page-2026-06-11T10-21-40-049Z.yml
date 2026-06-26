@@ -1,0 +1,22 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - paragraph [ref=e5]: Marca Demo
+        - heading "Campanha premium para produtos digitais de alta conversão" [level=1] [ref=e6]
+        - paragraph [ref=e7]: Escolha o produto ideal e entre em uma sala segura com um especialista.
+      - generic [ref=e8]:
+        - article [ref=e9]:
+          - heading "Alpha Pro" [level=2] [ref=e11]
+          - paragraph [ref=e12]: Um produto premium para operacoes digitais que precisam converter com previsibilidade.
+          - link "Ver detalhes" [ref=e13] [cursor=pointer]:
+            - /url: /p/alpha-pro
+        - article [ref=e14]:
+          - heading "Kit Performance" [level=2] [ref=e16]
+          - paragraph [ref=e17]: Materiais, scripts e acompanhamento para campanhas de alta resposta.
+          - link "Ver detalhes" [ref=e18] [cursor=pointer]:
+            - /url: /p/kit-performance
+      - paragraph [ref=e19]: Powered by Kynovra Sales
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e25] [cursor=pointer]:
+    - img [ref=e26]

@@ -1,0 +1,335 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - complementary [ref=e4]:
+        - link "KS Kynovra Sales" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e7]: KS
+          - generic [ref=e8]: Kynovra Sales
+        - navigation [ref=e9]:
+          - generic [ref=e10]:
+            - paragraph [ref=e11]: Operacao
+            - link "Dashboard" [ref=e13] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e14]
+              - generic [ref=e17]: Dashboard
+            - link "Atendimentos de Venda" [ref=e19] [cursor=pointer]:
+              - /url: /sales
+              - img [ref=e20]
+              - generic [ref=e22]: Atendimentos de Venda
+            - link "Suporte Pos-Venda" [ref=e24] [cursor=pointer]:
+              - /url: /post-sales-support
+              - img [ref=e25]
+              - generic [ref=e28]: Suporte Pos-Venda
+            - link "Notificacoes Internas" [ref=e30] [cursor=pointer]:
+              - /url: /notifications
+              - img [ref=e31]
+              - generic [ref=e34]: Notificacoes Internas
+          - generic [ref=e35]:
+            - paragraph [ref=e36]: Comercial
+            - link "Produtos" [ref=e38] [cursor=pointer]:
+              - /url: /products
+              - img [ref=e39]
+              - generic [ref=e43]: Produtos
+            - link "Campanhas" [ref=e45] [cursor=pointer]:
+              - /url: /campaigns
+              - img [ref=e46]
+              - generic [ref=e49]: Campanhas
+            - link "Leads e Registros" [ref=e51] [cursor=pointer]:
+              - /url: /leads
+              - img [ref=e52]
+              - generic [ref=e56]: Leads e Registros
+            - link "Estoque e Disponibilidade" [ref=e58] [cursor=pointer]:
+              - /url: /inventory
+              - img [ref=e59]
+              - generic [ref=e69]: Estoque e Disponibilidade
+          - generic [ref=e70]:
+            - paragraph [ref=e71]: Inteligencia
+            - link "Agentes IA" [ref=e73] [cursor=pointer]:
+              - /url: /agents
+              - img [ref=e74]
+              - generic [ref=e77]: Agentes IA
+            - link "Configuracoes de IA" [ref=e79] [cursor=pointer]:
+              - /url: /ai-settings
+              - img [ref=e80]
+              - generic [ref=e92]: Configuracoes de IA
+            - link "Comportamento da Equipe" [ref=e94] [cursor=pointer]:
+              - /url: /behavior
+              - img [ref=e95]
+              - generic [ref=e99]: Comportamento da Equipe
+          - generic [ref=e100]:
+            - paragraph [ref=e101]: Gestao
+            - link "Relatorios de Qualidade" [ref=e103] [cursor=pointer]:
+              - /url: /quality
+              - img [ref=e104]
+              - generic [ref=e108]: Relatorios de Qualidade
+            - link "Equipe e Permissoes" [ref=e110] [cursor=pointer]:
+              - /url: /team
+              - img [ref=e111]
+              - generic [ref=e116]: Equipe e Permissoes
+            - link "Auditoria e Historico" [ref=e118] [cursor=pointer]:
+              - /url: /audit
+              - img [ref=e119]
+              - generic [ref=e123]: Auditoria e Historico
+            - link "Configuracoes Gerais" [ref=e125] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e126]
+              - generic [ref=e129]: Configuracoes Gerais
+      - generic [ref=e130]:
+        - banner [ref=e131]:
+          - button "Recolher sidebar" [ref=e132]:
+            - img
+          - button "Buscar modulo, lead, produto ou comando... Ctrl K" [ref=e133]:
+            - img [ref=e134]
+            - generic [ref=e137]: Buscar modulo, lead, produto ou comando...
+            - generic [ref=e138]: Ctrl K
+          - button "Acoes" [ref=e139]:
+            - img
+            - text: Acoes
+          - button "Alternar modo foco" [ref=e140]:
+            - img
+          - button "Ajuda" [ref=e141]:
+            - img
+          - button "Abrir notificacoes" [ref=e142]:
+            - img
+          - button "VS" [ref=e143]:
+            - generic [ref=e145]: VS
+        - main [ref=e146]:
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149]:
+                - navigation "Breadcrumb" [ref=e150]:
+                  - list [ref=e151]:
+                    - listitem [ref=e152]:
+                      - generic [ref=e153]: Admin
+                      - generic [ref=e154]: /
+                    - listitem [ref=e155]:
+                      - generic [ref=e156]: Dashboard
+                - generic [ref=e157]:
+                  - heading "Dashboard operacional" [level=1] [ref=e158]
+                  - paragraph [ref=e159]: Visao operacional hibrida com performance comercial, IA, suporte e eventos ao vivo.
+              - generic [ref=e160]:
+                - button "Widgets" [ref=e161]:
+                  - img
+                  - text: Widgets
+                - button "Restaurar layout" [ref=e162]:
+                  - img
+                  - text: Restaurar layout
+            - generic [ref=e163]:
+              - combobox [ref=e164]:
+                - img
+              - combobox [ref=e165]
+              - combobox [ref=e166]:
+                - img
+              - combobox [ref=e167]
+              - combobox [ref=e168]:
+                - img
+              - combobox [ref=e169]
+              - combobox [ref=e170]:
+                - img
+              - combobox [ref=e171]
+              - combobox [ref=e172]:
+                - img
+              - combobox [ref=e173]
+              - generic [ref=e174]: "Perfil mockado: Dono"
+            - generic [ref=e175]:
+              - generic [ref=e176]:
+                - img [ref=e177]
+                - generic [ref=e184]:
+                  - generic [ref=e185]:
+                    - generic [ref=e186]: Vendas confirmadas
+                    - img [ref=e188]
+                  - generic [ref=e191]:
+                    - strong [ref=e192]: "82"
+                    - generic [ref=e193]: +12% vs ontem
+                    - paragraph [ref=e194]: Crescimento puxado por campanhas evergreen.
+              - generic [ref=e195]:
+                - img [ref=e196]
+                - generic [ref=e203]:
+                  - generic [ref=e204]:
+                    - generic [ref=e205]: Receita estimada
+                    - img [ref=e207]
+                  - generic [ref=e210]:
+                    - strong [ref=e211]: R$ 48.920
+                    - generic [ref=e212]: +18% vs ontem
+                    - paragraph [ref=e213]: Ticket medio subiu nos checkouts premium.
+              - generic [ref=e214]:
+                - img [ref=e215]
+                - generic [ref=e222]:
+                  - generic [ref=e223]:
+                    - generic [ref=e224]: Checkouts enviados
+                    - img [ref=e226]
+                  - generic [ref=e230]:
+                    - strong [ref=e231]: "210"
+                    - generic [ref=e232]: +9% vs ontem
+                    - paragraph [ref=e233]: Equipe comercial manteve cadencia alta.
+              - generic [ref=e234]:
+                - img [ref=e235]
+                - generic [ref=e242]:
+                  - generic [ref=e243]:
+                    - generic [ref=e244]: Checkouts acessados
+                    - img [ref=e246]
+                  - generic [ref=e249]:
+                    - strong [ref=e250]: "156"
+                    - generic [ref=e251]: +14% vs ontem
+                    - paragraph [ref=e252]: Boa aderencia das mensagens de urgencia.
+              - generic [ref=e253]:
+                - img [ref=e254]
+                - generic [ref=e261]:
+                  - generic [ref=e262]:
+                    - generic [ref=e263]: Atendimentos ativos
+                    - img [ref=e265]
+                  - generic [ref=e267]:
+                    - strong [ref=e268]: "38"
+                    - generic [ref=e269]: "-6% vs ontem"
+                    - paragraph [ref=e270]: Fila mais saudavel no periodo atual.
+              - generic [ref=e271]:
+                - img [ref=e272]
+                - generic [ref=e279]:
+                  - generic [ref=e280]:
+                    - generic [ref=e281]: Suportes ativos
+                    - img [ref=e283]
+                  - generic [ref=e289]:
+                    - strong [ref=e290]: "17"
+                    - generic [ref=e291]: +4% vs ontem
+                    - paragraph [ref=e292]: Maior volume em produtos digitais.
+              - generic [ref=e293]:
+                - img [ref=e294]
+                - generic [ref=e301]:
+                  - generic [ref=e302]:
+                    - generic [ref=e303]: Avaliacao media
+                    - img [ref=e305]
+                  - generic [ref=e307]:
+                    - strong [ref=e308]: "4.8"
+                    - generic [ref=e309]: +0.3 vs ontem
+                    - paragraph [ref=e310]: IA de suporte reduziu tempo de resposta.
+              - generic [ref=e311]:
+                - img [ref=e312]
+                - generic [ref=e319]:
+                  - generic [ref=e320]:
+                    - generic [ref=e321]: Taxa de conversao
+                    - img [ref=e323]
+                  - generic [ref=e326]:
+                    - strong [ref=e327]: 10.5%
+                    - generic [ref=e328]: +2.1% vs ontem
+                    - paragraph [ref=e329]: Checkout acessado converteu acima do baseline.
+            - generic [ref=e330]:
+              - generic [ref=e332]:
+                - heading "Funil visual premium" [level=2] [ref=e333]
+                - paragraph [ref=e334]: Vitrine → Produto → Pre-venda → Sala → Checkout → Venda.
+              - generic [ref=e335]:
+                - generic [ref=e336]:
+                  - generic [ref=e337]:
+                    - paragraph [ref=e338]: Vitrine
+                    - paragraph [ref=e339]: 1.240 acessos
+                    - paragraph [ref=e340]: 67% seguem para Produto
+                  - img [ref=e341]
+                - generic [ref=e343]:
+                  - generic [ref=e344]:
+                    - paragraph [ref=e345]: Produto
+                    - paragraph [ref=e346]: 830 visualizacoes
+                    - paragraph [ref=e347]: 73% seguem para Pre-venda
+                  - img [ref=e348]
+                - generic [ref=e350]:
+                  - generic [ref=e351]:
+                    - paragraph [ref=e352]: Pre-venda
+                    - paragraph [ref=e353]: 610 acessos
+                    - paragraph [ref=e354]: 64% seguem para Sala
+                  - img [ref=e355]
+                - generic [ref=e357]:
+                  - generic [ref=e358]:
+                    - paragraph [ref=e359]: Sala
+                    - paragraph [ref=e360]: 390 leads
+                    - paragraph [ref=e361]: 54% seguem para Checkout enviado
+                  - img [ref=e362]
+                - generic [ref=e364]:
+                  - generic [ref=e365]:
+                    - paragraph [ref=e366]: Checkout enviado
+                    - paragraph [ref=e367]: 210 envios
+                    - paragraph [ref=e368]: 74% seguem para Checkout acessado
+                  - img [ref=e369]
+                - generic [ref=e371]:
+                  - generic [ref=e372]:
+                    - paragraph [ref=e373]: Checkout acessado
+                    - paragraph [ref=e374]: 156 cliques
+                    - paragraph [ref=e375]: 53% seguem para Venda confirmada
+                  - img [ref=e376]
+                - generic [ref=e379]:
+                  - paragraph [ref=e380]: Venda confirmada
+                  - paragraph [ref=e381]: 82 vendas
+                  - paragraph [ref=e382]: Conversao final monitorada
+            - generic [ref=e383]:
+              - generic [ref=e384]:
+                - img [ref=e386]
+                - generic [ref=e388]:
+                  - heading "Timeline em tempo real" [level=2] [ref=e389]
+                  - paragraph [ref=e390]: Eventos mockados com acoes rapidas.
+              - generic [ref=e391]:
+                - generic [ref=e392]:
+                  - generic [ref=e393]:
+                    - generic [ref=e394]:
+                      - paragraph [ref=e395]: Novo lead entrou na sala
+                      - generic [ref=e396]: Em atendimento
+                      - generic [ref=e397]: agora
+                    - paragraph [ref=e398]: Marina Alves iniciou atendimento no Produto Alpha.
+                  - button "Abrir atendimento" [ref=e399]
+                - generic [ref=e400]:
+                  - generic [ref=e401]:
+                    - generic [ref=e402]:
+                      - paragraph [ref=e403]: Checkout enviado
+                      - generic [ref=e404]: Checkout enviado
+                      - generic [ref=e405]: 2 min
+                    - paragraph [ref=e406]: Checkout seguro disparado para Lucas N.
+                  - button "Abrir lead" [ref=e407]
+                - generic [ref=e408]:
+                  - generic [ref=e409]:
+                    - generic [ref=e410]:
+                      - paragraph [ref=e411]: Checkout acessado
+                      - generic [ref=e412]: Checkout acessado
+                      - generic [ref=e413]: 5 min
+                    - paragraph [ref=e414]: Lead abriu o link apos 43 segundos.
+                  - button "Abrir lead" [ref=e415]
+                - generic [ref=e416]:
+                  - generic [ref=e417]:
+                    - generic [ref=e418]:
+                      - paragraph [ref=e419]: Venda confirmada
+                      - generic [ref=e420]: Venda confirmada
+                      - generic [ref=e421]: 9 min
+                    - paragraph [ref=e422]: "Pedido #KS-2048 confirmado em campanha Black Week."
+                  - button "Ver log" [ref=e423]
+                - generic [ref=e424]:
+                  - generic [ref=e425]:
+                    - generic [ref=e426]:
+                      - paragraph [ref=e427]: Suporte aberto
+                      - generic [ref=e428]: Aguardando retorno
+                      - generic [ref=e429]: 12 min
+                    - paragraph [ref=e430]: Cliente reportou duvida de acesso ao produto.
+                  - button "Abrir suporte" [ref=e431]
+                - generic [ref=e432]:
+                  - generic [ref=e433]:
+                    - generic [ref=e434]:
+                      - paragraph [ref=e435]: IA assumiu atendimento
+                      - generic [ref=e436]: IA automatica
+                      - generic [ref=e437]: 14 min
+                    - paragraph [ref=e438]: Agente contextual ativado para objeção de preco.
+                  - button "Ver log" [ref=e439]
+                - generic [ref=e440]:
+                  - generic [ref=e441]:
+                    - generic [ref=e442]:
+                      - paragraph [ref=e443]: Estoque baixo
+                      - generic [ref=e444]: Estoque baixo
+                      - generic [ref=e445]: 18 min
+                    - paragraph [ref=e446]: Produto Kit Pro chegou a 8 unidades disponiveis.
+                  - button "Abrir produto" [ref=e447]
+                - generic [ref=e448]:
+                  - generic [ref=e449]:
+                    - generic [ref=e450]:
+                      - paragraph [ref=e451]: Falha de IA
+                      - generic [ref=e452]: Erro de IA
+                      - generic [ref=e453]: 22 min
+                    - paragraph [ref=e454]: Fallback humano acionado por baixa confianca.
+                  - button "Ver log" [ref=e455]
+    - generic [ref=e456]:
+      - heading "Command Center" [level=2] [ref=e457]
+      - paragraph [ref=e458]: Busque modulos, acoes e atalhos do painel.
+  - region "Notifications alt+T"

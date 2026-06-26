@@ -1,0 +1,55 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - button "Abrir menu" [ref=e6]:
+          - img
+        - paragraph [ref=e8]: Base tecnica administrativa
+        - button "Abrir notificacoes" [ref=e9]:
+          - img
+      - main [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e13]:
+            - navigation "Breadcrumb" [ref=e14]:
+              - list [ref=e15]:
+                - listitem [ref=e16]:
+                  - generic [ref=e17]: Admin
+                  - generic [ref=e18]: /
+                - listitem [ref=e19]:
+                  - generic [ref=e20]: Dashboard
+            - generic [ref=e21]:
+              - heading "Dashboard" [level=1] [ref=e22]
+              - paragraph [ref=e23]: Estrutura tecnica inicial para conectar dados reais nas proximas etapas.
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - generic [ref=e26]:
+                - generic [ref=e27]: Receita
+                - img [ref=e29]
+              - generic [ref=e32]:
+                - strong [ref=e33]: "--"
+                - paragraph [ref=e34]: Aguardando conexao com Supabase.
+            - generic [ref=e35]:
+              - generic [ref=e36]:
+                - generic [ref=e37]: Conversoes
+                - img [ref=e39]
+              - generic [ref=e41]:
+                - strong [ref=e42]: "--"
+                - paragraph [ref=e43]: Pipeline sera modelado depois.
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - generic [ref=e46]: Atendimentos
+                - img [ref=e48]
+              - generic [ref=e50]:
+                - strong [ref=e51]: "--"
+                - paragraph [ref=e52]: Atendimento sera integrado depois.
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - heading "Modulos aguardando implementacao" [level=2] [ref=e56]
+              - paragraph [ref=e57]: Nenhuma regra de negocio, banco ou autenticacao completa foi implementada nesta etapa.
+            - generic [ref=e58]: Base tecnica pronta
+    - generic [ref=e59]:
+      - heading "Command Palette" [level=2] [ref=e60]
+      - paragraph [ref=e61]: Search for a command to run...
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e67] [cursor=pointer]:
+    - img [ref=e68]
