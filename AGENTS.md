@@ -378,27 +378,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ### Providers Suportados
 
-- OpenAI
-- Google Gemini
-- Groq
-- OpenRouter
-- NVIDIA
-- Anthropic Claude
+- SiliconFlow
 
 ### Modelos Recomendados
 
-- OpenAI: GPT-4.1 Mini, GPT-4.1
-- Google: Gemini 2.5 Flash, Flash-Lite, Pro
-- Groq: Llama 3.3 70B, Llama 3.1 8B Instant, Qwen
-- OpenRouter: Free Router e modelos pagos
-- NVIDIA: modelos disponiveis no catalogo
-- Anthropic: Claude Haiku, Sonnet, Opus
+- SiliconFlow: `deepseek-ai/DeepSeek-V4-Flash`
 
 ### Edge Functions
 
 - `ai-generate-response`
 - `ai-auto-takeover`
 - `test-ai-connection`
+- `ai-agent-harness`
+- `ai-gateway-models`
+- `ai-public-auto-reply`
 
 ### Timeout
 

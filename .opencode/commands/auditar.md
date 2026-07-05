@@ -1,7 +1,7 @@
 ---
 description: Auditar projeto sem alterar arquivos.
 agent: plan
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Audite o projeto Kynovra Sales sem alterar arquivos.

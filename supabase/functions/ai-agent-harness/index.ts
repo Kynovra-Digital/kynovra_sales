@@ -1,9 +1,10 @@
 import {
   generateAIText,
+  getAIProviderSetupMessage,
   hasAIProviderEnvironment,
   normalizeAIProvider,
 } from "../_shared/ai-provider.ts";
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 
 type SessionType = "sales" | "support";
@@ -103,7 +104,7 @@ const TOOL_CATEGORIES = new Map<string, string>([
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse(request);
   }
 
   let stage = "inicialização";
@@ -207,7 +208,7 @@ Deno.serve(async (request) => {
     const provider = normalizeAIProvider(context.settings.provider);
     if (!hasAIProviderEnvironment(provider)) {
       return harnessResponse({
-        error: "Provedor de IA não configurado no Supabase Secrets.",
+        error: getAIProviderSetupMessage(provider),
         output: "",
         success: false,
         tool: scopedBody.tool,
@@ -292,7 +293,6 @@ Deno.serve(async (request) => {
       cost_estimate: null,
       input_tokens: inputTokens,
       metadata: {
-        gateway: provider === "vercel",
         mode: scopedBody.mode ?? "copilot",
         tone: scopedBody.tone ?? null,
       },

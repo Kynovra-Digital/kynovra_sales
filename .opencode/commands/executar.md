@@ -1,7 +1,7 @@
 ---
 description: Planejar e executar tarefa no projeto.
 agent: build
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Planeje brevemente e execute a tarefa solicitada.

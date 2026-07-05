@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 
 type SendEmailPayload = {
   from?: string;
@@ -11,7 +11,7 @@ type SendEmailPayload = {
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse(request);
   }
 
   try {

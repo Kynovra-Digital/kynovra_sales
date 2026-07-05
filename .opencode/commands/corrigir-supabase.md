@@ -1,7 +1,7 @@
 ---
 description: Corrigir integrações Supabase quebradas.
 agent: build
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Corrija integrações Supabase quebradas.

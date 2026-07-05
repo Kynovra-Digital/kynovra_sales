@@ -4,12 +4,14 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowRight, KeyRound, MessageCircleMore } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PoweredBy } from "@/components/public/powered-by";
+import { PublicAccessModal } from "@/components/public/public-access-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { usePublicAuth } from "@/hooks/use-public-auth";
 import {
   createSupportSession,
   listPublicActiveProducts,
@@ -18,7 +20,9 @@ import {
 
 export default function PublicSupportEntryPage() {
   const router = useRouter();
+  const { isLoading: authLoading, user } = usePublicAuth();
   const [mode, setMode] = useState<"code" | "new">("new");
+  const [showAccessModal, setShowAccessModal] = useState(false);
   const [productId, setProductId] = useState("");
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
@@ -29,6 +33,12 @@ export default function PublicSupportEntryPage() {
     queryFn: listPublicActiveProducts,
     queryKey: ["public", "products"],
   });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setShowAccessModal(true);
+    }
+  }, [authLoading, user]);
   const createMutation = useMutation({
     mutationFn: () =>
       createSupportSession({
@@ -54,16 +64,31 @@ export default function PublicSupportEntryPage() {
 
   function handleStartSupport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!user) {
+      setShowAccessModal(true);
+      return;
+    }
     createMutation.mutate();
   }
 
   function handleContinue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!user) {
+      setShowAccessModal(true);
+      return;
+    }
     validateMutation.mutate(continuityCode);
   }
 
   return (
     <main className="public-surface min-h-screen px-4 py-5 text-slate-950 md:py-8">
+      <PublicAccessModal
+        description="Entre com e-mail e senha ou continue com Google para abrir ou continuar seu suporte. Etapas sensíveis adicionais serão puladas."
+        onOpenChange={setShowAccessModal}
+        open={showAccessModal}
+        redirectPath="/suporte"
+        title="Entre para acessar o suporte"
+      />
       <section className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="rounded-3xl border border-white bg-[linear-gradient(135deg,#0d132b,#2563eb_58%,#7c3aed)] p-5 text-white shadow-[0_28px_80px_rgb(37_99_235_/_0.22)] md:p-8">
           <span className="inline-flex size-11 items-center justify-center rounded-xl border border-white/20 bg-white/10">
@@ -102,6 +127,11 @@ export default function PublicSupportEntryPage() {
           {mode === "new" ? (
             <form className="grid gap-4" onSubmit={handleStartSupport}>
               <h2 className="font-semibold text-2xl">Iniciar suporte</h2>
+              <SupportAuthStatus
+                isLoading={authLoading}
+                onLogin={() => setShowAccessModal(true)}
+                userLabel={user?.name || user?.email || null}
+              />
               <PublicField id="support-product" label="Produto">
                 <select
                   className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"
@@ -156,6 +186,11 @@ export default function PublicSupportEntryPage() {
           ) : (
             <form className="grid gap-4" onSubmit={handleContinue}>
               <h2 className="font-semibold text-2xl">Código de continuidade</h2>
+              <SupportAuthStatus
+                isLoading={authLoading}
+                onLogin={() => setShowAccessModal(true)}
+                userLabel={user?.name || user?.email || null}
+              />
               <PublicField id="continuity-code" label="Código de continuidade">
                 <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
                   <KeyRound className="size-4 text-slate-500" />
@@ -199,6 +234,38 @@ export default function PublicSupportEntryPage() {
         <PoweredBy />
       </div>
     </main>
+  );
+}
+
+function SupportAuthStatus({
+  isLoading,
+  onLogin,
+  userLabel,
+}: {
+  isLoading: boolean;
+  onLogin: () => void;
+  userLabel: string | null;
+}) {
+  return (
+    <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-sm">
+      <p className="font-semibold text-blue-950">Identificação segura</p>
+      <p className="mt-1 text-blue-800/80 text-xs leading-5">
+        {userLabel
+          ? `Você continuará como ${userLabel}.`
+          : "Faça login para abrir ou continuar um suporte sem repetir dados sensíveis."}
+      </p>
+      {!userLabel ? (
+        <Button
+          className="mt-3 h-9 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
+          disabled={isLoading}
+          onClick={onLogin}
+          type="button"
+          variant="outline"
+        >
+          {isLoading ? "Verificando..." : "Fazer login"}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

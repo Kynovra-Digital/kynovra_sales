@@ -41,7 +41,7 @@ type ConnectionState = "error" | "idle" | "success" | "testing";
 export function AISettingsSection() {
   const { organization, profile } = useAuth();
   const queryClient = useQueryClient();
-  const [provider, setProvider] = useState<AIProvider>("vercel");
+  const [provider, setProvider] = useState<AIProvider>("siliconflow");
   const [modelId, setModelId] = useState("");
   const [search, setSearch] = useState("");
   const [temperature, setTemperature] = useState("0.7");
@@ -83,16 +83,19 @@ export function AISettingsSection() {
     );
   }, [models, search]);
 
+  const savedProvider = savedSettings
+    ? normalizeProvider(savedSettings.provider)
+    : null;
+  const savedModelId = savedSettings?.model_id ?? savedSettings?.model ?? "";
   const effectiveModelId =
-    modelId || savedSettings?.model_id || savedSettings?.model || "";
+    modelId || (provider === savedProvider ? savedModelId : "");
   const canSave = Boolean(effectiveModelId);
   const canTest = Boolean(effectiveModelId);
+  const providerName = getProviderName(provider);
 
   useEffect(() => {
     if (!savedSettings) return;
-    setProvider(
-      savedSettings.provider === "openrouter" ? "openrouter" : "vercel",
-    );
+    setProvider(normalizeProvider(savedSettings.provider));
     setModelId(savedSettings.model_id ?? savedSettings.model ?? "");
     setTemperature(String(savedSettings.temperature ?? 0.7));
     setMaxOutputTokens(String(savedSettings.max_output_tokens ?? 800));
@@ -108,9 +111,20 @@ export function AISettingsSection() {
   }, [savedSettings]);
 
   useEffect(() => {
-    if (modelId || savedSettings?.model_id || models.length === 0) return;
+    if (modelId || models.length === 0) return;
+
+    const savedModelForProvider =
+      provider === savedProvider ? savedModelId : "";
+    if (
+      savedModelForProvider &&
+      models.some((model) => model.id === savedModelForProvider)
+    ) {
+      setModelId(savedModelForProvider);
+      return;
+    }
+
     setModelId(models[0]?.id ?? "");
-  }, [modelId, models, savedSettings?.model_id]);
+  }, [modelId, models, provider, savedModelId, savedProvider]);
 
   useEffect(() => {
     if (hasTestedConnection) return;
@@ -282,6 +296,7 @@ export function AISettingsSection() {
                   setProvider(value as AIProvider);
                   setModelId("");
                   setFallbackModelId("");
+                  setSearch("");
                   setConnectionState("idle");
                 }}
                 value={provider}
@@ -291,15 +306,14 @@ export function AISettingsSection() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="vercel">Vercel AI Gateway</SelectItem>
-                    <SelectItem value="openrouter">OpenRouter</SelectItem>
+                    <SelectItem value="siliconflow">SiliconFlow</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </Field>
 
             <Field
-              description={`A lista vem do ${provider === "openrouter" ? "OpenRouter" : "Vercel AI Gateway"} via Supabase Edge Function.`}
+              description={`A lista vem do ${providerName} via Supabase Edge Function.`}
               label="Buscar modelo"
             >
               <div className="premium-input flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border px-3">
@@ -445,9 +459,9 @@ export function AISettingsSection() {
 
       <div className="grid min-w-0 gap-3 md:grid-cols-3">
         <InfoCard
-          description="Vercel AI Gateway e OpenRouter usam secrets server-side separados."
+          description="SiliconFlow usa secrets server-side separados no Supabase."
           icon={Sparkles}
-          title="Dois provedores"
+          title="SiliconFlow"
         />
         <InfoCard
           description="A lista de modelos é carregada dinamicamente. Não há catálogo hardcoded como fonte final."
@@ -462,6 +476,14 @@ export function AISettingsSection() {
       </div>
     </section>
   );
+}
+
+function getProviderName(_provider: AIProvider) {
+  return "SiliconFlow";
+}
+
+function normalizeProvider(_provider?: string | null): AIProvider {
+  return "siliconflow";
 }
 
 function Field({

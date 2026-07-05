@@ -147,7 +147,11 @@ export default function PostSalesSupportPage() {
               Copiar link de suporte
             </Button>
             <Button asChild className="gap-2" size="sm" variant="outline">
-              <Link href={supportLink} target="_blank">
+              <Link
+                href={supportLink}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 <ExternalLink data-icon="inline-start" />
                 Abrir suporte
               </Link>

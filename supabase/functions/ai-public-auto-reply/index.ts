@@ -1,9 +1,10 @@
 import {
   generateAIText,
+  getAIProviderSetupMessage,
   hasAIProviderEnvironment,
   normalizeAIProvider,
 } from "../_shared/ai-provider.ts";
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 
 type SessionType = "sales" | "support";
@@ -22,7 +23,7 @@ type AISettings = {
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse(request);
   }
 
   try {
@@ -73,9 +74,16 @@ Deno.serve(async (request) => {
     const aiSettings = settings as AISettings | null;
     const provider = normalizeAIProvider(aiSettings?.provider);
 
-    if (!aiSettings?.model_id || !hasAIProviderEnvironment(provider)) {
+    if (!aiSettings?.model_id) {
       return jsonResponse({
         message: "Modelo global de IA não configurado.",
+        ok: false,
+      });
+    }
+
+    if (!hasAIProviderEnvironment(provider)) {
+      return jsonResponse({
+        message: getAIProviderSetupMessage(provider),
         ok: false,
       });
     }

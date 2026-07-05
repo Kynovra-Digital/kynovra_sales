@@ -1,5 +1,6 @@
 import {
   Boxes,
+  BrainCircuit,
   ClipboardCheck,
   Gauge,
   History,
@@ -50,6 +51,12 @@ export const visibleTabPermissions: PermissionOption[] = [
     icon: Megaphone,
     key: "campaigns.view",
     label: "Campanhas",
+  },
+  {
+    description: "Permite acessar os prompts Hardness dos agentes.",
+    icon: BrainCircuit,
+    key: "hardness.view",
+    label: "Hardness",
   },
   {
     description: "Permite acessar leads, clientes e registros.",

@@ -12,7 +12,6 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/lib/supabase/database.types";
 
@@ -50,14 +49,14 @@ export function RealtimeTimeline({
           Ver todas
         </Button>
       </div>
-      <div className="premium-scrollbar max-h-[420px] min-w-0 overflow-y-auto overflow-x-hidden">
+      <div className="premium-scrollbar max-h-[312px] min-w-0 overflow-y-auto overflow-x-hidden">
         {events.length ? (
           events.map((event, index) => {
             const Icon = eventIcons[event.title] ?? Activity;
 
             return (
               <div
-                className="group relative grid min-w-0 gap-2 border-white/10 border-b bg-white/[0.02] px-3 py-3 transition-colors last:border-b-0 hover:bg-white/[0.05] md:grid-cols-[3.25rem_minmax(0,1fr)_8rem_7.5rem] 2xl:grid-cols-[4rem_minmax(0,1fr)_10rem_8rem]"
+                className="group relative grid min-w-0 gap-2 border-white/10 border-b bg-white/[0.015] px-3 py-3 transition-colors last:border-b-0 hover:bg-white/[0.05] md:grid-cols-[3.25rem_minmax(0,1fr)_7rem] 2xl:grid-cols-[4rem_minmax(0,1fr)_7.5rem]"
                 key={event.id}
               >
                 {index < events.length - 1 ? (
@@ -83,9 +82,6 @@ export function RealtimeTimeline({
                       {event.body ?? "Evento registrado no Supabase."}
                     </p>
                   </div>
-                </div>
-                <div className="min-w-0 overflow-hidden md:pt-1">
-                  <StatusBadge label={event.type} />
                 </div>
                 <Button className="shrink-0" size="sm" variant="outline">
                   Abrir

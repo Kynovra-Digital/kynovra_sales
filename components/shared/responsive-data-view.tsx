@@ -1,4 +1,4 @@
-import { ChevronRight, Copy } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -51,6 +51,7 @@ export function ResponsiveDataView({
   renderActions,
 }: ResponsiveDataViewProps) {
   const [origin, setOrigin] = useState("");
+  const canCopyAttendanceLink = columns.includes("Link de atendimento");
   const secondaryColumns = columns.filter(
     (column) => !["Nome", "Status"].includes(column),
   );
@@ -104,14 +105,14 @@ export function ResponsiveDataView({
                   <TableCell className="px-3">
                     <div className="flex flex-wrap gap-2">
                       {renderActions ? renderActions(row) : null}
-                      {row.Slug ? (
+                      {canCopyAttendanceLink && row.Slug ? (
                         <Button
                           aria-label="Copiar link de atendimento"
                           onClick={() => copyAttendanceLink(row)}
-                          size="icon-sm"
+                          size="sm"
                           variant="outline"
                         >
-                          <Copy />
+                          Copiar link
                         </Button>
                       ) : null}
                       <Button
@@ -166,14 +167,13 @@ export function ResponsiveDataView({
             </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               {renderActions ? renderActions(row) : null}
-              {row.Slug ? (
+              {canCopyAttendanceLink && row.Slug ? (
                 <Button
                   className="flex-1 gap-2"
                   onClick={() => copyAttendanceLink(row)}
                   size="sm"
                   variant="outline"
                 >
-                  <Copy data-icon="inline-start" />
                   Copiar link
                 </Button>
               ) : null}

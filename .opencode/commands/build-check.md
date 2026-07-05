@@ -1,7 +1,7 @@
 ---
 description: Rodar validações do projeto e corrigir erros.
 agent: build
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Rode as validações disponíveis:

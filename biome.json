@@ -13,6 +13,8 @@
       "!.next",
       "!dist",
       "!build",
+      "!supabase/.temp",
+      "!sds.json",
       "!.opencode"
     ]
   },

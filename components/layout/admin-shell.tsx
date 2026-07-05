@@ -47,7 +47,7 @@ export function AdminShell({ children }: AdminShellProps) {
         )}
       </AnimatePresence>
 
-      <div className="admin-main relative flex flex-col min-w-0 min-h-0 h-[100dvh]">
+      <div className="admin-main relative flex flex-col min-w-0 min-h-0">
         <AnimatePresence>
           {!focusEnabled && (
             <motion.div
@@ -77,6 +77,7 @@ export function AdminShell({ children }: AdminShellProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
+                className="flex min-h-full min-w-0 flex-col"
               >
                 {children}
               </motion.div>

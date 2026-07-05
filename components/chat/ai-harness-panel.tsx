@@ -143,7 +143,7 @@ export function AIHarnessPanel({
           Resposta para o cliente
         </label>
         <Textarea
-          className="min-h-[min(52vh,30rem)] resize-none"
+          className="min-h-32 resize-none"
           id={`${sessionType}-ai-response-output`}
           placeholder={
             generateMutation.isPending

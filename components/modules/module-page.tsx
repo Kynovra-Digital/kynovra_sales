@@ -4,14 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
   ChevronsUpDown,
-  Copy,
   Edit3,
   ExternalLink,
   ImageIcon,
   Plus,
   Search,
   SlidersHorizontal,
+  Star,
   Trash2,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +22,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { TeamGroupsPanel } from "@/components/modules/team-groups-panel";
+import { ManualEvaluationDialog } from "@/components/products/manual-evaluation-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MetricCard } from "@/components/shared/metric-card";
 import {
@@ -57,9 +59,11 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   archiveCampaign,
   createCampaign,
+  generateUniqueCampaignSlug,
   getCampaignConfiguration,
   updateCampaign,
 } from "@/lib/supabase/queries/campaigns";
+import { generateProductAIPrompt } from "@/lib/supabase/queries/hardness";
 import {
   type KnowledgeBaseRow,
   listKnowledgeBases,
@@ -70,14 +74,19 @@ import {
   createProduct,
   generateUniqueProductCode,
   getProductAIConfiguration,
+  listProductQualifications,
   listProducts,
+  type ProductQualificationRow,
   saveProductAIConfiguration,
   updateProduct,
 } from "@/lib/supabase/queries/products";
 import { queryKeys } from "@/lib/supabase/query-keys";
 import { uploadFileToBucket } from "@/lib/supabase/storage/upload-file";
 import { getClientAppOrigin } from "@/lib/url/get-app-origin";
-import { buildProductAttendanceLink } from "@/lib/url/public-links";
+import {
+  buildProductAttendanceLink,
+  buildStorefrontLink,
+} from "@/lib/url/public-links";
 
 type ModuleKey =
   | "audit"
@@ -101,14 +110,25 @@ type ModuleConfig = {
 
 type WizardField = {
   disabledWhen?: (formState: WizardFormState) => boolean;
+  hiddenWhen?: (formState: WizardFormState) => boolean;
   id: string;
   helperText?: string;
   label: string;
+  placeholder?: string;
   readOnly?: boolean;
   required?: boolean;
   options?: Array<{ description?: string; label: string; value: string }>;
+  maxFiles?: number;
+  previewRatio?: "12:5" | "2458:640" | "4:3";
   selection?: "multiple" | "single";
-  type?: "checkbox" | "date" | "file" | "number" | "text" | "textarea";
+  type?:
+    | "checkbox"
+    | "date"
+    | "file"
+    | "multi-image"
+    | "number"
+    | "text"
+    | "textarea";
 };
 
 type WizardStep = {
@@ -118,7 +138,10 @@ type WizardStep = {
   title: string;
 };
 
-type WizardFormState = Record<string, boolean | File | string | undefined>;
+type WizardFormState = Record<
+  string,
+  boolean | File | File[] | string | string[] | undefined
+>;
 
 const productFieldHelp: Record<string, string> = {
   category: "Escolha o grupo comercial do produto. Exemplo: Eletrônicos.",
@@ -129,9 +152,9 @@ const productFieldHelp: Record<string, string> = {
   difficulty:
     "Indique a dificuldade de venda para orientar a operação: fácil, médio ou difícil.",
   image:
-    "Use imagem quadrada ou 4:3, recomendada 1200x900 px, JPG/PNG/WebP até 2 MB.",
-  "main-benefit":
-    "Benefício principal que ajuda o cliente a entender rapidamente por que esse produto vale a pena.",
+    "Use imagem quadrada 1:1, recomendada 1200x1200 px, JPG/PNG/WebP até 2 MB.",
+  images:
+    "Use imagens quadradas 1:1, recomendadas em 1200x1200 px. A primeira imagem será a capa do produto.",
   name: "Nome comercial do produto. Exemplo: Mini Projetor YG300.",
   "public-benefits":
     "Liste os principais benefícios que o cliente deve perceber rapidamente.",
@@ -150,8 +173,6 @@ const productFieldHelp: Record<string, string> = {
     "Primeira mensagem da IA quando ela assumir o atendimento.",
   "sales-knowledge-base-ids":
     "Bases que a IA de venda e o copiloto usarão para criar respostas comerciais.",
-  "sales-prompt":
-    "Roteiro de venda usado pela IA e pelo copiloto para orientar atendimento comercial.",
   "sales-rules":
     "Regras de venda. Exemplo: não prometer desconto sem confirmação.",
   "sales-tone": "Tom da IA de venda. Exemplo: consultivo, direto e humano.",
@@ -183,6 +204,38 @@ function addProductFieldHelp(steps: WizardStep[]) {
   }));
 }
 
+const campaignFieldHelp: Record<string, string> = {
+  banner:
+    "Banner usado no slide principal da loja. Use proporção 12:5, recomendado 1920x800 px, JPG/PNG/WebP até 2 MB. O arquivo será enviado ao bucket campaign-banners.",
+  description:
+    "Resumo comercial da campanha para orientar a seção da loja, tracking e operação interna.",
+  "ends-at":
+    "Informe a data final somente quando a campanha tiver encerramento planejado.",
+  headline:
+    "Frase principal da campanha. Exemplo: Oferta especial para lançamentos do mês.",
+  name: "Nome interno/comercial da campanha. O slug é gerado automaticamente a partir deste nome.",
+  "product-ids":
+    "Selecione os produtos reais do Supabase que aparecem nesta seção da loja.",
+  "schedule-mode":
+    "Escolha se a campanha fica contínua ou se possui uma data de encerramento.",
+  "section-banner":
+    "Banner usado dentro da seção da campanha na loja. Use proporção 2458x640 px, JPG/PNG/WebP até 2 MB.",
+  "starts-at":
+    "Data em que a campanha começa a operar ou aparecer na loja pública.",
+  status:
+    "Define a publicação operacional da campanha: rascunho, ativa, pausada, finalizada ou arquivada.",
+};
+
+function addCampaignFieldHelp(steps: WizardStep[]) {
+  return steps.map((step) => ({
+    ...step,
+    fields: step.fields.map((field) => ({
+      ...field,
+      helperText: field.helperText ?? campaignFieldHelp[field.id],
+    })),
+  }));
+}
+
 const moduleConfigs: Record<ModuleKey, ModuleConfig> = {
   audit: {
     columns: ["Nome", "Ação", "Entidade", "Status", "Criado em"],
@@ -194,13 +247,13 @@ const moduleConfigs: Record<ModuleKey, ModuleConfig> = {
     title: "Auditoria e Histórico",
   },
   campaigns: {
-    columns: ["Nome", "Status", "Headline", "Slug", "Criado em"],
+    columns: ["Nome", "Status", "Data de início", "Data final"],
     createLabel: "Nova Campanha",
     emptyText:
-      "Crie campanhas para organizar vitrines, produtos e tracking comercial.",
+      "Crie campanhas para organizar seções da loja, produtos e tracking comercial.",
     emptyTitle: "Nenhuma campanha cadastrada ainda",
     key: "campaigns",
-    subtitle: "Gerencie campanhas, vitrines, rastreamento e performance.",
+    subtitle: "Gerencie campanhas como seções da loja pública única.",
     title: "Campanhas",
   },
   inventory: {
@@ -279,6 +332,7 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const [origin, setOrigin] = useState("");
   const [selectedRow, setSelectedRow] = useState<ModuleRow | null>(null);
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(
     null,
   );
@@ -296,6 +350,11 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     queryFn: () => listProducts(),
     queryKey: queryKeys.products.list,
   });
+  const { data: productQualifications = [] } = useQuery({
+    enabled: moduleKey === "products",
+    queryFn: listProductQualifications,
+    queryKey: queryKeys.products.qualification,
+  });
   const wizardSteps = useMemo(
     () => getWizardSteps(moduleKey, knowledgeBases, campaignProducts),
     [campaignProducts, knowledgeBases, moduleKey],
@@ -308,6 +367,15 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     permissions.includes("*") || permissions.includes("team.manage");
   const organizationId = organization?.id ?? profile?.organization_id ?? "";
   const isOrganizationReady = Boolean(organizationId);
+  const selectedProductQualification = useMemo(
+    () =>
+      moduleKey === "products" && selectedRow
+        ? productQualifications.find(
+            (item) => item.product.id === selectedRow.id,
+          )
+        : null,
+    [moduleKey, productQualifications, selectedRow],
+  );
   const createBaseDisabled =
     isAuthLoading || !isOrganizationReady || !canCreateRecords;
   const {
@@ -338,9 +406,12 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     setOrigin(getClientAppOrigin());
   }, []);
 
-  async function copyPublicLink(link: string) {
+  async function copyPublicLink(
+    link: string,
+    successMessage = "Link copiado.",
+  ) {
     await navigator.clipboard?.writeText(link);
-    toast.success("Link de atendimento copiado.");
+    toast.success(successMessage);
   }
 
   function closeCreateDrawer() {
@@ -367,6 +438,7 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
         : moduleKey === "campaigns"
           ? {
               status: "active",
+              "schedule-mode": "continuous",
             }
           : {},
     );
@@ -390,9 +462,11 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       description: campaign.description ?? "",
       "ends-at": toDateInputValue(campaign.ends_at),
       "existing-banner-url": campaign.banner_url ?? "",
+      "existing-section-banner-url": campaign.section_banner_url ?? "",
       headline: campaign.headline ?? "",
       name: campaign.name,
       "product-ids": configuration.productIds.join(","),
+      "schedule-mode": campaign.ends_at ? "limited" : "continuous",
       slug: campaign.slug,
       "starts-at": toDateInputValue(campaign.starts_at),
       status: campaign.status,
@@ -426,7 +500,10 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       "commission-margin": product.commission_margin?.toString() ?? "",
       difficulty: product.difficulty ?? "",
       "existing-image-url": product.image_url ?? "",
-      "main-benefit": product.main_benefit ?? "",
+      "existing-product-images": normalizeProductImageUrls(
+        product.image_urls,
+        product.image_url,
+      ),
       name: product.name,
       price: product.price?.toString() ?? "",
       priority: product.priority.toString(),
@@ -439,7 +516,6 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       "sales-display-name": sales?.display_name ?? "",
       "sales-initial-message": sales?.initial_message ?? "",
       "sales-knowledge-base-ids": configuration.salesKnowledgeBaseIds.join(","),
-      "sales-prompt": sales?.prompt ?? "",
       "sales-rules": sales?.response_rules ?? "",
       "sales-tone": sales?.tone ?? "",
       slug: product.slug,
@@ -462,7 +538,10 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     setCreateOpen(true);
   }
 
-  function updateFormField(id: string, value: boolean | File | string) {
+  function updateFormField(
+    id: string,
+    value: boolean | File | File[] | string | string[],
+  ) {
     setFormState((current) => ({
       ...current,
       [id]: value,
@@ -470,6 +549,11 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       id === "name" &&
       typeof value === "string"
         ? { slug: slugify(value) }
+        : {}),
+      ...(moduleKey === "campaigns" &&
+      id === "schedule-mode" &&
+      value === "continuous"
+        ? { "ends-at": "" }
         : {}),
     }));
   }
@@ -727,71 +811,87 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
                 : null}
             </div>
             {moduleKey === "products" && selectedRow?.Código ? (
-              <div className="mt-4 rounded-xl border border-primary/25 bg-primary/10 p-4">
-                <p className="font-medium text-sm">
-                  Link público de atendimento
-                </p>
-                <p className="mt-2 break-all font-mono text-blue-100 text-xs">
-                  {buildProductAttendanceLink(
-                    origin,
-                    String(selectedRow.Código),
-                  )}
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    onClick={() => void openProductEditor(selectedRow.id)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Edit3 className="size-3.5" />
-                    Editar produto e IA
-                  </Button>
-                  <Button
-                    disabled={archiveMutation.isPending}
-                    onClick={() => archiveMutation.mutate(selectedRow)}
-                    size="sm"
-                    variant="destructive"
-                  >
-                    <Trash2 className="size-3.5" />
-                    Excluir
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      copyPublicLink(
-                        buildProductAttendanceLink(
+              <>
+                <div className="mt-4 rounded-xl border border-primary/25 bg-primary/10 p-4">
+                  <p className="font-medium text-sm">
+                    Link público de atendimento
+                  </p>
+                  <p className="mt-2 break-all font-mono text-blue-100 text-xs">
+                    {buildProductAttendanceLink(
+                      origin,
+                      String(selectedRow.Código),
+                    )}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => void openProductEditor(selectedRow.id)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Edit3 className="size-3.5" />
+                      Editar produto e IA
+                    </Button>
+                    <Button
+                      disabled={archiveMutation.isPending}
+                      onClick={() => archiveMutation.mutate(selectedRow)}
+                      size="sm"
+                      variant="destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                      Excluir
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        copyPublicLink(
+                          buildProductAttendanceLink(
+                            origin,
+                            String(selectedRow.Código),
+                          ),
+                        )
+                      }
+                      size="sm"
+                    >
+                      Copiar link
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={buildProductAttendanceLink(
                           origin,
                           String(selectedRow.Código),
-                        ),
-                      )
-                    }
-                    size="sm"
-                  >
-                    <Copy data-icon="inline-start" />
-                    Copiar link
-                  </Button>
-                  <Button asChild size="sm" variant="outline">
-                    <Link
-                      href={buildProductAttendanceLink(
-                        origin,
-                        String(selectedRow.Código),
-                      )}
-                      target="_blank"
+                        )}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <ExternalLink data-icon="inline-start" />
+                        Abrir
+                      </Link>
+                    </Button>
+                    <Button
+                      onClick={() => setIsEvaluationOpen(true)}
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
                     >
-                      <ExternalLink data-icon="inline-start" />
-                      Abrir
-                    </Link>
-                  </Button>
+                      <Star className="size-3.5" />
+                      Avaliar Produto
+                    </Button>
+                  </div>
                 </div>
-              </div>
+                <ProductCommentsPanel
+                  qualification={selectedProductQualification}
+                />
+              </>
             ) : null}
             {moduleKey === "campaigns" && selectedRow ? (
               <div className="mt-4 rounded-xl border border-kynovra-tech-purple/25 bg-kynovra-tech-purple/10 p-4">
-                <p className="font-medium text-sm">Campanha</p>
+                <p className="font-medium text-sm">Seção da loja pública</p>
                 <p className="mt-2 text-muted-foreground text-xs">
-                  Edite dados, banner, status e produtos vinculados desta
-                  campanha.
+                  Campanhas ativas aparecem como seções no link único da loja.
                 </p>
-                <div className="mt-3">
+                <p className="mt-3 break-all font-mono text-blue-100 text-xs">
+                  {buildStorefrontLink(origin)}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     onClick={() => void openCampaignEditor(selectedRow.id)}
                     size="sm"
@@ -808,6 +908,16 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
                   >
                     <Trash2 className="size-3.5" />
                     Excluir
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link
+                      href={buildStorefrontLink(origin)}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <ExternalLink data-icon="inline-start" />
+                      Abrir loja
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -909,6 +1019,14 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {moduleKey === "products" && selectedRow?.id && (
+        <ManualEvaluationDialog
+          open={isEvaluationOpen}
+          onOpenChange={setIsEvaluationOpen}
+          productId={selectedRow.id}
+        />
+      )}
     </div>
   );
 }
@@ -1037,11 +1155,17 @@ function WizardFieldControl({
 }: {
   field: WizardField;
   formState: WizardFormState;
-  onChange: (id: string, value: boolean | File | string) => void;
-  value: boolean | File | string | undefined;
+  onChange: (
+    id: string,
+    value: boolean | File | File[] | string | string[],
+  ) => void;
+  value: boolean | File | File[] | string | string[] | undefined;
 }) {
   const disabled = field.disabledWhen?.(formState) ?? false;
+  const hidden = field.hiddenWhen?.(formState) ?? false;
   const helpText = field.helperText;
+
+  if (hidden) return null;
 
   if (field.options && field.selection) {
     return (
@@ -1065,10 +1189,15 @@ function WizardFieldControl({
           <FieldHelpIcon text={helpText} />
         </label>
         <Textarea
+          className="min-h-32 resize-y"
           disabled={disabled}
           id={field.id}
           onChange={(event) => onChange(field.id, event.target.value)}
-          placeholder={field.readOnly ? "Somente leitura" : field.label}
+          placeholder={
+            field.readOnly
+              ? "Somente leitura"
+              : (field.placeholder ?? field.label)
+          }
           readOnly={field.readOnly}
           value={typeof value === "string" ? value : ""}
         />
@@ -1118,14 +1247,31 @@ function WizardFieldControl({
           type="file"
         />
         <ImageUploadPreview
-          existingUrl={
-            typeof formState["existing-image-url"] === "string"
-              ? formState["existing-image-url"]
-              : ""
-          }
+          existingUrl={getExistingPreviewUrl(field, formState)}
           file={value instanceof File ? value : null}
+          ratio={field.previewRatio ?? "4:3"}
         />
       </div>
+    );
+  }
+
+  if (field.type === "multi-image") {
+    const files = Array.isArray(value)
+      ? value.filter((item): item is File => item instanceof File)
+      : [];
+    const existingImages = getExistingProductImages(formState);
+
+    return (
+      <ProductGalleryInput
+        disabled={disabled}
+        existingImages={existingImages}
+        field={field}
+        files={files}
+        onExistingImagesChange={(nextImages) =>
+          onChange("existing-product-images", nextImages)
+        }
+        onChange={(nextFiles) => onChange(field.id, nextFiles)}
+      />
     );
   }
 
@@ -1218,9 +1364,11 @@ function FieldHelpIcon({ text }: { text?: string }) {
 function ImageUploadPreview({
   existingUrl,
   file,
+  ratio = "4:3",
 }: {
   existingUrl?: string;
   file: File | null;
+  ratio?: "12:5" | "2458:640" | "4:3";
 }) {
   const [previewUrl, setPreviewUrl] = useState("");
 
@@ -1237,6 +1385,8 @@ function ImageUploadPreview({
   }, [file]);
 
   const imageUrl = previewUrl || existingUrl || "";
+  const isBanner = ratio === "12:5" || ratio === "2458:640";
+  const isSectionBanner = ratio === "2458:640";
 
   if (!imageUrl) {
     return (
@@ -1245,9 +1395,15 @@ function ImageUploadPreview({
           <ImageIcon className="size-5" />
         </span>
         <div>
-          <p className="font-medium text-foreground">Preview da imagem</p>
+          <p className="font-medium text-foreground">
+            {isBanner ? "Preview do banner" : "Preview da imagem"}
+          </p>
           <p className="mt-1">
-            Selecione uma imagem para visualizar como ela ficará no produto.
+            {isBanner
+              ? isSectionBanner
+                ? "Selecione um banner para visualizar o formato 2458x640 usado na seção da campanha."
+                : "Selecione um banner para visualizar o recorte 12:5 usado no slider da loja."
+              : "Selecione uma imagem para visualizar como ela ficará no produto."}
           </p>
         </div>
       </div>
@@ -1257,11 +1413,21 @@ function ImageUploadPreview({
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
       <p className="mb-2 text-muted-foreground text-xs font-medium">
-        {previewUrl ? "Preview da imagem selecionada" : "Imagem atual"}
+        {previewUrl
+          ? isBanner
+            ? "Preview do banner selecionado"
+            : "Preview da imagem selecionada"
+          : isBanner
+            ? "Banner atual"
+            : "Imagem atual"}
       </p>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/10 bg-black/20">
+      <div
+        className={`relative overflow-hidden rounded-lg border border-white/10 bg-black/20 ${isSectionBanner ? "aspect-[1229/320]" : isBanner ? "aspect-[12/5]" : "aspect-[4/3]"}`}
+      >
         <Image
-          alt="Preview do produto"
+          alt={
+            isBanner ? "Preview do banner da campanha" : "Preview do produto"
+          }
           className="object-cover"
           fill
           sizes="(max-width: 768px) 100vw, 520px"
@@ -1270,9 +1436,310 @@ function ImageUploadPreview({
         />
       </div>
       <p className="mt-2 text-muted-foreground text-xs">
-        Prévia em proporção 4:3, igual ao recorte usado nos cards do produto.
+        {isBanner
+          ? isSectionBanner
+            ? "Prévia em proporção 2458x640, igual ao banner da seção da campanha na loja."
+            : "Prévia em proporção 12:5, igual ao recorte recomendado para o slider de campanhas da loja."
+          : "Prévia em proporção 1:1, igual ao recorte usado nos cards do produto."}
       </p>
     </div>
+  );
+}
+
+function ProductCommentsPanel({
+  qualification,
+}: {
+  qualification: ProductQualificationRow | null | undefined;
+}) {
+  const comments = qualification?.comments ?? [];
+
+  return (
+    <section className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-medium text-sm text-white">
+            Comentários dos clientes
+          </p>
+          <p className="mt-1 text-muted-foreground text-xs">
+            Avaliações reais vinculadas aos atendimentos deste produto.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-blue-100 text-xs">
+          <Star className="size-3.5 fill-current" />
+          {qualification?.averageRating
+            ? qualification.averageRating.toFixed(1)
+            : "Sem nota"}
+          <span className="text-muted-foreground">
+            · {qualification?.reviewCount ?? 0} avaliação
+            {(qualification?.reviewCount ?? 0) === 1 ? "" : "ões"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex min-w-0 flex-col divide-y divide-white/10">
+        {comments.length ? (
+          comments.map((comment) => (
+            <article className="min-w-0 py-4 first:pt-0" key={comment.id}>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <RatingStars rating={comment.rating ?? 0} />
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-muted-foreground text-xs">
+                  {comment.sessionType === "support" ? "Suporte" : "Venda"}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {formatProductCommentDate(comment.createdAt)}
+                </span>
+              </div>
+              <p className="break-words font-medium text-sm text-white leading-6">
+                {comment.comment}
+              </p>
+            </article>
+          ))
+        ) : (
+          <div className="rounded-lg border border-dashed border-white/10 bg-black/20 p-4 text-muted-foreground text-sm">
+            Este produto ainda não possui comentário textual. As notas
+            aparecerão aqui quando clientes avaliarem o atendimento.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RatingStars({ rating }: { rating: number }) {
+  return (
+    <span className="flex items-center gap-0.5 text-amber-400">
+      {Array.from({ length: 5 }, (_, index) => {
+        const star = index + 1;
+
+        return (
+          <Star
+            className={`size-3.5 ${star <= Math.round(rating) ? "fill-current" : "fill-transparent"}`}
+            key={`product-comment-star-${star}`}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
+function formatProductCommentDate(date: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+  }).format(new Date(date));
+}
+
+function ProductGalleryInput({
+  disabled,
+  existingImages,
+  field,
+  files,
+  onExistingImagesChange,
+  onChange,
+}: {
+  disabled?: boolean;
+  existingImages: string[];
+  field: WizardField;
+  files: File[];
+  onExistingImagesChange: (images: string[]) => void;
+  onChange: (files: File[]) => void;
+}) {
+  const maxFiles = field.maxFiles ?? 5;
+  const allImages = [
+    ...files.map((file, index) => ({
+      file,
+      id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
+      kind: "file" as const,
+      sourceIndex: index,
+    })),
+    ...existingImages
+      .slice(0, Math.max(maxFiles - files.length, 0))
+      .map((imageUrl) => ({
+        id: imageUrl,
+        imageUrl,
+        kind: "existing" as const,
+        sourceIndex: -1,
+      })),
+  ].slice(0, maxFiles);
+  const selectedImage = allImages[0] ?? null;
+  const thumbnails = Array.from({ length: maxFiles - 1 }, (_, index) => ({
+    image: allImages[index + 1],
+    slot: index,
+  }));
+
+  function addFiles(fileList: FileList | null) {
+    if (!fileList || disabled) return;
+    const incomingFiles = Array.from(fileList).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    const nextFiles = [...files, ...incomingFiles].slice(0, maxFiles);
+
+    if (files.length + incomingFiles.length > maxFiles) {
+      toast.warning(`Você pode selecionar no máximo ${maxFiles} imagens.`);
+    }
+
+    onChange(nextFiles);
+  }
+
+  function removeFile(index: number) {
+    onChange(files.filter((_, fileIndex) => fileIndex !== index));
+  }
+
+  function removeExistingImage(imageUrl: string) {
+    onExistingImagesChange(existingImages.filter((url) => url !== imageUrl));
+  }
+
+  function removeGalleryImage(image: (typeof allImages)[number]) {
+    if (image.kind === "file") {
+      removeFile(image.sourceIndex);
+      return;
+    }
+
+    if (image.imageUrl) {
+      removeExistingImage(image.imageUrl);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <label
+          className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium"
+          htmlFor={field.id}
+        >
+          {field.label}
+          <FieldHelpIcon text={field.helperText} />
+        </label>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-muted-foreground text-[11px]">
+          {files.length || existingImages.length
+            ? Math.min(files.length || existingImages.length, maxFiles)
+            : 0}
+          /{maxFiles} imagens
+        </span>
+      </div>
+
+      <p className="text-muted-foreground text-xs leading-relaxed">
+        Selecione até {maxFiles} imagens quadradas 1:1. A primeira será usada
+        como capa nos cards públicos da loja.
+      </p>
+      <input
+        accept="image/*"
+        className="sr-only"
+        disabled={disabled || files.length >= maxFiles}
+        id={field.id}
+        multiple
+        onChange={(event) => {
+          addFiles(event.target.files);
+          event.target.value = "";
+        }}
+        type="file"
+      />
+
+      <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+        <div className="relative mx-auto aspect-square max-h-[320px] w-full max-w-[360px]">
+          <label
+            className="relative flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-black/20 transition hover:border-blue-400/50"
+            htmlFor={field.id}
+          >
+            {selectedImage ? (
+              <ProductGalleryImage image={selectedImage} priority />
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-slate-500">
+                <Plus className="size-12 stroke-[1.4]" />
+                <span className="font-medium text-xs">Imagem principal</span>
+              </div>
+            )}
+          </label>
+          {selectedImage ? (
+            <button
+              aria-label="Remover imagem principal"
+              className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-black/75 text-white transition hover:bg-red-500"
+              onClick={() => removeGalleryImage(selectedImage)}
+              type="button"
+            >
+              <X className="size-4" />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="mx-auto mt-3 grid max-w-[360px] grid-cols-4 gap-2.5">
+          {thumbnails.map((thumbnail) =>
+            thumbnail.image ? (
+              <div
+                className="relative aspect-square overflow-hidden rounded-md border border-white/15 bg-black/20"
+                key={thumbnail.image.id}
+              >
+                <ProductGalleryImage image={thumbnail.image} />
+                <button
+                  aria-label={`Remover imagem ${thumbnail.slot + 2}`}
+                  className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
+                  onClick={() => removeGalleryImage(thumbnail.image)}
+                  type="button"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label
+                className="flex aspect-square cursor-pointer items-center justify-center rounded-md border border-white/15 bg-white/[0.025] text-slate-500 transition hover:border-blue-400/50 hover:text-blue-300"
+                htmlFor={field.id}
+                key={`empty-image-slot-${thumbnail.slot + 1}`}
+              >
+                <Plus className="size-5 stroke-[1.5]" />
+              </label>
+            ),
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductGalleryImage({
+  image,
+  priority = false,
+}: {
+  image: {
+    file?: File;
+    imageUrl?: string;
+    kind: "existing" | "file";
+    sourceIndex: number;
+  };
+  priority?: boolean;
+}) {
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    if (!image.file) {
+      setPreviewUrl("");
+      return;
+    }
+
+    const nextUrl = URL.createObjectURL(image.file);
+    setPreviewUrl(nextUrl);
+
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [image.file]);
+
+  const source = previewUrl || image.imageUrl || "";
+
+  if (!source) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <ImageIcon className="size-6" />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      alt="Imagem do produto"
+      className="object-cover"
+      fill
+      priority={priority}
+      sizes={priority ? "(max-width: 768px) 90vw, 360px" : "96px"}
+      src={source}
+      unoptimized
+    />
   );
 }
 
@@ -1394,26 +1861,37 @@ async function createModuleRecord(
             excludeProductId: editingProductId,
             organizationId,
           });
-    const imageFile = formState.image instanceof File ? formState.image : null;
-    const uploaded = imageFile
-      ? await uploadFileToBucket({
-          bucket: "product-images",
-          file: imageFile,
-          fileNamePrefix: productCode,
-          folder: organizationId,
-        })
-      : null;
+    const imageFiles = Array.isArray(formState.images)
+      ? formState.images.filter((item): item is File => item instanceof File)
+      : [];
+    const existingImageUrls = getExistingProductImages(formState);
+    const uploadedImages = imageFiles.length
+      ? await Promise.all(
+          imageFiles.slice(0, 5).map((file, index) =>
+            uploadFileToBucket({
+              bucket: "product-images",
+              file,
+              fileNamePrefix: `${productCode}-${index + 1}`,
+              folder: organizationId,
+            }),
+          ),
+        )
+      : [];
+    const productImageUrls = normalizeProductImageUrls(
+      uploadedImages.length
+        ? uploadedImages.map((uploadedImage) => uploadedImage.publicUrl)
+        : existingImageUrls,
+      nullableString(formState["existing-image-url"]),
+    );
 
     const productValues = {
       category: nullableString(formState.category),
       checkout_url: nullableString(formState["checkout-url"]),
       commission_margin: nullableNumber(formState["commission-margin"]),
       difficulty: nullableString(formState.difficulty),
-      image_url:
-        uploaded?.publicUrl ?? nullableString(formState["existing-image-url"]),
-      main_benefit:
-        nullableString(formState["main-benefit"]) ??
-        nullableString(formState["public-benefits"]),
+      image_url: productImageUrls[0] ?? null,
+      image_urls: productImageUrls,
+      main_benefit: nullableString(formState["public-benefits"]),
       name,
       organization_id: organizationId,
       price: nullableNumber(formState.price),
@@ -1445,24 +1923,30 @@ async function createModuleRecord(
         .filter(Boolean);
     const effectiveSalesTools = salesHarnessToolValues;
     const effectiveSupportTools = supportHarnessToolValues;
+    const salesKnowledgeBaseIds = parseTools(
+      formState["sales-knowledge-base-ids"],
+    );
+    const supportKnowledgeBaseIds = parseTools(
+      formState["support-knowledge-base-ids"],
+    );
+    const knowledgeBaseIds = [
+      ...new Set([...salesKnowledgeBaseIds, ...supportKnowledgeBaseIds]),
+    ];
+    const salesEnabled = Boolean(formState["sales-ai-enabled"]);
+    const supportEnabled = Boolean(formState["support-ai-enabled"]);
 
     await saveProductAIConfiguration({
-      knowledgeBaseIds: [
-        ...new Set([
-          ...parseTools(formState["sales-knowledge-base-ids"]),
-          ...parseTools(formState["support-knowledge-base-ids"]),
-        ]),
-      ],
+      knowledgeBaseIds,
       organizationId,
       productId: product.id,
       sales: {
         display_name: stringValue(formState["sales-display-name"]),
-        enabled: Boolean(formState["sales-ai-enabled"]),
+        enabled: salesEnabled,
         enabled_tools: effectiveSalesTools,
         fallback_message: "",
         initial_message: stringValue(formState["sales-initial-message"]),
-        knowledge_base_ids: parseTools(formState["sales-knowledge-base-ids"]),
-        prompt: stringValue(formState["sales-prompt"]),
+        knowledge_base_ids: salesKnowledgeBaseIds,
+        prompt: "",
         rules: stringValue(formState["sales-rules"]),
         tone: stringValue(formState["sales-tone"]),
         tool_permissions: Object.fromEntries(
@@ -1471,11 +1955,11 @@ async function createModuleRecord(
       },
       support: {
         display_name: "",
-        enabled: Boolean(formState["support-ai-enabled"]),
+        enabled: supportEnabled,
         enabled_tools: effectiveSupportTools,
         fallback_message: "",
         initial_message: "",
-        knowledge_base_ids: parseTools(formState["support-knowledge-base-ids"]),
+        knowledge_base_ids: supportKnowledgeBaseIds,
         prompt: "",
         rules: "",
         tone: "",
@@ -1485,12 +1969,69 @@ async function createModuleRecord(
       },
     });
 
+    const [generatedSalesPrompt, generatedSupportPrompt] = await Promise.all([
+      salesEnabled
+        ? generateProductAIPrompt({
+            mode: "sales",
+            organizationId,
+            productId: product.id,
+          })
+        : Promise.resolve(""),
+      supportEnabled
+        ? generateProductAIPrompt({
+            mode: "support",
+            organizationId,
+            productId: product.id,
+          })
+        : Promise.resolve(""),
+    ]);
+
+    if (salesEnabled || supportEnabled) {
+      await saveProductAIConfiguration({
+        knowledgeBaseIds,
+        organizationId,
+        productId: product.id,
+        sales: {
+          display_name: stringValue(formState["sales-display-name"]),
+          enabled: salesEnabled,
+          enabled_tools: effectiveSalesTools,
+          fallback_message: "",
+          initial_message: stringValue(formState["sales-initial-message"]),
+          knowledge_base_ids: salesKnowledgeBaseIds,
+          prompt: generatedSalesPrompt,
+          rules: stringValue(formState["sales-rules"]),
+          tone: stringValue(formState["sales-tone"]),
+          tool_permissions: Object.fromEntries(
+            effectiveSalesTools.map((tool) => [tool, true]),
+          ),
+        },
+        support: {
+          display_name: "",
+          enabled: supportEnabled,
+          enabled_tools: effectiveSupportTools,
+          fallback_message: "",
+          initial_message: "",
+          knowledge_base_ids: supportKnowledgeBaseIds,
+          prompt: generatedSupportPrompt,
+          rules: "",
+          tone: "",
+          tool_permissions: Object.fromEntries(
+            effectiveSupportTools.map((tool) => [tool, true]),
+          ),
+        },
+      });
+    }
+
     return product;
   }
 
   if (moduleKey === "campaigns") {
     const name = stringValue(formState.name);
-    const slug = stringValue(formState.slug) || slugify(name);
+    const slug = (await generateUniqueCampaignSlug({
+      excludeCampaignId: editingCampaignId,
+      name,
+      organizationId,
+    })) as string;
     const bannerFile =
       formState.banner instanceof File ? formState.banner : null;
     const uploaded = bannerFile
@@ -1498,6 +2039,18 @@ async function createModuleRecord(
           bucket: "campaign-banners",
           file: bannerFile,
           fileNamePrefix: slug,
+          folder: organizationId,
+        })
+      : null;
+    const sectionBannerFile =
+      formState["section-banner"] instanceof File
+        ? formState["section-banner"]
+        : null;
+    const uploadedSectionBanner = sectionBannerFile
+      ? await uploadFileToBucket({
+          bucket: "campaign-banners",
+          file: sectionBannerFile,
+          fileNamePrefix: `${slug}-section`,
           folder: organizationId,
         })
       : null;
@@ -1510,10 +2063,16 @@ async function createModuleRecord(
       banner_url:
         uploaded?.publicUrl ?? nullableString(formState["existing-banner-url"]),
       description: nullableString(formState.description),
-      ends_at: nullableDate(formState["ends-at"]),
+      ends_at:
+        stringValue(formState["schedule-mode"]) === "limited"
+          ? nullableDate(formState["ends-at"])
+          : null,
       headline: nullableString(formState.headline),
       name,
       organization_id: organizationId,
+      section_banner_url:
+        uploadedSectionBanner?.publicUrl ??
+        nullableString(formState["existing-section-banner-url"]),
       slug,
       starts_at: nullableDate(formState["starts-at"]),
       status: stringValue(formState.status) || "active",
@@ -1525,6 +2084,7 @@ async function createModuleRecord(
           {
             ...campaignValues,
             banner_url: campaignValues.banner_url ?? null,
+            section_banner_url: campaignValues.section_banner_url ?? null,
           },
           productIds,
         );
@@ -1561,9 +2121,49 @@ function nullableDate(value: WizardFormState[string]) {
   return normalized ? new Date(`${normalized}T00:00:00`).toISOString() : null;
 }
 
+function getExistingPreviewUrl(field: WizardField, formState: WizardFormState) {
+  const previewKey =
+    field.id === "section-banner"
+      ? "existing-section-banner-url"
+      : field.id === "banner"
+        ? "existing-banner-url"
+        : "existing-image-url";
+  const value = formState[previewKey];
+  return typeof value === "string" ? value : "";
+}
+
+function getExistingProductImages(formState: WizardFormState) {
+  const existingImages = formState["existing-product-images"];
+  if (Array.isArray(existingImages)) {
+    return existingImages.filter(
+      (imageUrl): imageUrl is string => typeof imageUrl === "string",
+    );
+  }
+
+  const fallbackImage = formState["existing-image-url"];
+  return typeof fallbackImage === "string" && fallbackImage
+    ? [fallbackImage]
+    : [];
+}
+
+function normalizeProductImageUrls(
+  imageUrls: string[] | null | undefined,
+  fallbackImageUrl?: string | null,
+) {
+  return [
+    ...new Set([...(imageUrls ?? []), fallbackImageUrl ?? ""].filter(Boolean)),
+  ].slice(0, 5);
+}
+
 function toDateInputValue(value: string | null) {
   if (!value) return "";
   return value.slice(0, 10);
+}
+
+function toDateDisplay(value: unknown) {
+  return typeof value === "string"
+    ? new Date(value).toLocaleDateString("pt-BR")
+    : "--";
 }
 
 function slugify(value: string) {
@@ -1603,6 +2203,24 @@ function normalizeRow(
       id: String(row.id),
       name: String(row.name ?? "Produto"),
       status: String(row.status ?? "Inativo"),
+    };
+  }
+
+  if (moduleKey === "campaigns") {
+    return {
+      "Banner da seção": row.section_banner_url,
+      "Banner do slide": row.banner_url,
+      "Criado em": createdAt,
+      "Data de início": toDateDisplay(row.starts_at),
+      "Data final": toDateDisplay(row.ends_at),
+      Descrição: row.description,
+      Headline: row.headline,
+      Nome: row.name ?? "Campanha",
+      Slug: row.slug,
+      Status: row.status,
+      id: String(row.id),
+      name: String(row.name ?? "Campanha"),
+      status: String(row.status ?? "Rascunho"),
     };
   }
 
@@ -1706,6 +2324,49 @@ const productStatuses = [
   { label: "Arquivado", value: "archived" },
 ];
 
+const campaignStatuses = [
+  {
+    description: "Ainda não aparece na operação pública.",
+    label: "Rascunho",
+    value: "draft",
+  },
+  {
+    description: "Campanha ativa como seção da loja e tracking.",
+    label: "Ativa",
+    value: "active",
+  },
+  {
+    description: "Pausada temporariamente sem arquivar.",
+    label: "Pausada",
+    value: "paused",
+  },
+  {
+    description: "Encerrada após o período comercial.",
+    label: "Finalizada",
+    value: "finished",
+  },
+  {
+    description: "Removida da operação ativa.",
+    label: "Arquivada",
+    value: "archived",
+  },
+];
+
+const campaignScheduleModes = [
+  {
+    description:
+      "Sem data final definida; encerre manualmente quando necessário.",
+    label: "Campanha contínua",
+    value: "continuous",
+  },
+  {
+    description:
+      "Exibe o campo de data final e salva o encerramento no Supabase.",
+    label: "Campanha com fim",
+    value: "limited",
+  },
+];
+
 const productDifficulties = [
   { label: "Fácil", value: "facil" },
   { label: "Médio", value: "medio" },
@@ -1805,7 +2466,14 @@ function getWizardSteps(
       {
         fields: [
           { id: "name", label: "Nome", required: true },
-          { id: "image", label: "Imagem do produto", type: "file" },
+          {
+            helperText:
+              "Envie até 5 imagens quadradas 1:1 para a galeria do produto. A primeira imagem será usada como capa nos cards públicos.",
+            id: "images",
+            label: "Imagens do produto",
+            maxFiles: 5,
+            type: "multi-image",
+          },
           {
             id: "category",
             label: "Categoria",
@@ -1908,12 +2576,6 @@ function getWizardSteps(
             label: "Tom",
           },
           {
-            id: "sales-prompt",
-            disabledWhen: (formState) => !formState["sales-ai-enabled"],
-            label: "Roteiro de venda",
-            type: "textarea",
-          },
-          {
             id: "sales-rules",
             disabledWhen: (formState) => !formState["sales-ai-enabled"],
             label: "Regras de venda",
@@ -1960,11 +2622,10 @@ function getWizardSteps(
   }
 
   if (moduleKey === "campaigns") {
-    return [
+    return addCampaignFieldHelp([
       {
         fields: [
           { id: "name", label: "Nome", required: true },
-          { id: "slug", label: "Slug da campanha" },
           { id: "headline", label: "Headline" },
           { id: "description", label: "Descrição curta", type: "textarea" },
         ],
@@ -1973,18 +2634,40 @@ function getWizardSteps(
       },
       {
         fields: [
-          { id: "banner", label: "Banner da campanha", type: "file" },
+          {
+            id: "banner",
+            label: "Banner do slide",
+            previewRatio: "12:5",
+            type: "file",
+          },
+          {
+            id: "section-banner",
+            label: "Banner da seção",
+            previewRatio: "2458:640",
+            type: "file",
+          },
           {
             id: "status",
             label: "Status",
-            helperText: "active, draft, paused ou archived.",
+            options: campaignStatuses,
+            selection: "single",
           },
           { id: "starts-at", label: "Início", type: "date" },
-          { id: "ends-at", label: "Fim", type: "date" },
+          {
+            id: "schedule-mode",
+            label: "Duração da campanha",
+            options: campaignScheduleModes,
+            selection: "single",
+          },
+          {
+            hiddenWhen: (formState) => formState["schedule-mode"] !== "limited",
+            id: "ends-at",
+            label: "Fim",
+            type: "date",
+          },
           {
             id: "product-ids",
             label: "Produtos vinculados",
-            helperText: "Selecione os produtos que participam desta campanha.",
             options: campaignProducts.map((product) => ({
               description: product.status,
               label: product.name,
@@ -1994,7 +2677,7 @@ function getWizardSteps(
           },
         ],
         id: "publishing",
-        title: "Vitrine e Produtos",
+        title: "Loja e Produtos",
       },
       {
         fields: [
@@ -2008,7 +2691,7 @@ function getWizardSteps(
         id: "review",
         title: "Revisão",
       },
-    ];
+    ]);
   }
 
   if (moduleKey === "team") {

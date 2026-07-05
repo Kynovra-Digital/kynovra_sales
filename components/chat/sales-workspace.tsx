@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight,
   BadgeAlert,
   CheckCircle2,
   CreditCard,
@@ -20,6 +19,7 @@ import {
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AIHarnessPanel } from "@/components/chat/ai-harness-panel";
+import { FormattedContent } from "@/components/chat/formatted-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,11 +41,23 @@ import {
 import { queryKeys } from "@/lib/supabase/query-keys";
 import { cn } from "@/lib/utils";
 
-export function SalesWorkspace({ session }: { session: SalesTicketView }) {
+export function SalesWorkspace({
+  isTransferringToQueue = false,
+  onTransferToQueue,
+  isConfirmingSale = false,
+  onConfirmSale,
+  session,
+}: {
+  isConfirmingSale?: boolean;
+  isTransferringToQueue?: boolean;
+  onConfirmSale?: () => void;
+  onTransferToQueue?: () => void;
+  session: SalesTicketView;
+}) {
   const { organization, profile } = useAuth();
   const queryClient = useQueryClient();
   const organizationId = organization?.id ?? profile?.organization_id ?? "";
-  const [mode, setMode] = useState<"auto" | "copilot">("copilot");
+  const [mode] = useState<"auto" | "copilot">("copilot");
   const [message, setMessage] = useState("");
   const [isDetailsOpen, setDetailsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -72,6 +84,18 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
     },
   });
 
+  const sendCheckoutMutation = useMutation({
+    mutationFn: () =>
+      sendSalesMessage(session.id, buildCheckoutMessage(session)),
+    onError: () => toast.error("Não foi possível enviar o link de checkout."),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sales.messages(session.id),
+      });
+      toast.success("Link de checkout enviado ao cliente.");
+    },
+  });
+
   useEffect(
     () =>
       subscribeSalesMessages(session.id, () => {
@@ -95,9 +119,9 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
   }
 
   const detailsPanel = (
-    <div className="flex flex-col h-full overflow-hidden">
-      <Tabs defaultValue="ia" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="grid w-full grid-cols-5 h-11 border border-white/5 bg-white/[0.02] p-1 rounded-xl shrink-0">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <Tabs defaultValue="ia" className="flex min-h-0 flex-1 flex-col">
+        <TabsList className="grid h-auto w-full shrink-0 grid-cols-5 rounded-xl border border-white/5 bg-white/[0.02] p-1 sm:h-11">
           <TabsTrigger
             value="ia"
             className="text-[10px] uppercase font-bold rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
@@ -130,7 +154,7 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 overflow-y-auto premium-scrollbar mt-4 pr-2">
+        <div className="premium-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-2">
           <TabsContent className="m-0 focus-visible:ring-0" value="ia">
             <AIHarnessPanel
               currentMessage={message}
@@ -150,7 +174,23 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
             <ProductToolsTab session={session} />
           </TabsContent>
           <TabsContent className="m-0 focus-visible:ring-0" value="ações">
-            <ActionsToolsTab mode={mode} setMode={setMode} />
+            <ActionsToolsTab
+              isConfirmingSale={isConfirmingSale}
+              isSendingCheckout={sendCheckoutMutation.isPending}
+              isTransferringToQueue={isTransferringToQueue}
+              onConfirmSale={onConfirmSale}
+              onSendCheckout={() => {
+                if (!session.product?.checkout_url) {
+                  toast.error(
+                    "Este produto não possui link de checkout configurado.",
+                  );
+                  return;
+                }
+
+                sendCheckoutMutation.mutate();
+              }}
+              onTransferToQueue={onTransferToQueue}
+            />
           </TabsContent>
           <TabsContent className="m-0 focus-visible:ring-0" value="histórico">
             <SessionHistoryTab session={session} />
@@ -161,7 +201,7 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
   );
 
   return (
-    <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
+    <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_clamp(22rem,28vw,30rem)] 2xl:grid-cols-[minmax(0,1fr)_clamp(24rem,26vw,32rem)]">
       <section className="flex flex-col h-full min-h-0 min-w-0 overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.01] shadow-2xl">
         <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-white/5 border-b bg-white/[0.02] px-5 backdrop-blur-md">
           <div className="flex min-w-0 items-center gap-3">
@@ -259,7 +299,7 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
                           : "rounded-tl-none border-primary/20 bg-primary/10 text-blue-50 shadow-primary/5",
                     )}
                   >
-                    {item.content}
+                    <FormattedContent>{item.content}</FormattedContent>
                   </div>
 
                   <span className="px-1 text-[9px] font-medium text-muted-foreground/30">
@@ -315,43 +355,43 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
           )}
         </div>
 
-        <footer className="shrink-0 border-white/5 border-t bg-white/[0.02] p-4 backdrop-blur-2xl">
+        <footer className="shrink-0 border-white/5 border-t bg-white/[0.02] p-2.5 backdrop-blur-2xl">
           <form className="relative group" onSubmit={handleSend}>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Input
-                  className="h-12 w-full rounded-2xl border-white/5 bg-white/[0.03] pl-12 pr-4 text-sm transition-all focus:bg-white/[0.06] focus:ring-primary/20 placeholder:text-muted-foreground/30"
+                  className="h-9 w-full rounded-lg border-white/5 bg-white/[0.03] pl-9 pr-3 text-xs transition-all focus:bg-white/[0.06] focus:ring-primary/20 placeholder:text-muted-foreground/30"
                   id="sales-message"
                   autoComplete="off"
                   onChange={(event) => setMessage(event.target.value)}
                   placeholder="Envie uma mensagem ou use o copiloto..."
                   value={message}
                 />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center size-7 rounded-xl bg-white/[0.03] text-muted-foreground/40">
-                  <Smile className="size-4" />
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex size-5 items-center justify-center rounded-md bg-white/[0.03] text-muted-foreground/40">
+                  <Smile className="size-3" />
                 </div>
               </div>
               <Button
                 aria-label="Enviar"
-                className="size-12 rounded-2xl bg-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95"
+                className="size-9 rounded-lg bg-primary shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 active:scale-95"
                 disabled={!message.trim() || sendMutation.isPending}
                 size="icon"
                 type="submit"
               >
                 {sendMutation.isPending ? (
-                  <div className="size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  <div className="size-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                 ) : (
-                  <Send className="size-5 ml-0.5" />
+                  <Send className="ml-0.5 size-4" />
                 )}
               </Button>
             </div>
 
-            <div className="mt-3 flex items-center justify-between px-1">
-              <div className="flex items-center gap-2 text-muted-foreground/30 text-[9px] font-bold uppercase tracking-widest">
-                <CheckCircle2 className="size-3" />
+            <div className="mt-1.5 flex items-center justify-between px-1">
+              <div className="flex items-center gap-1.5 text-muted-foreground/30 text-[8px] font-bold uppercase tracking-widest">
+                <CheckCircle2 className="size-2.5" />
                 Criptografia Ativa
               </div>
-              <div className="text-muted-foreground/30 text-[9px] font-medium italic">
+              <div className="text-muted-foreground/30 text-[8px] font-medium italic">
                 Press Enter to send
               </div>
             </div>
@@ -359,8 +399,8 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
         </footer>
       </section>
 
-      <aside className="hidden min-h-0 min-w-0 overflow-hidden xl:block">
-        <div className="h-full rounded-[2rem] border border-white/5 bg-white/[0.02] p-5 shadow-inner">
+      <aside className="hidden h-full min-h-0 min-w-0 overflow-hidden xl:block">
+        <div className="h-full min-h-0 rounded-[2rem] border border-white/5 bg-white/[0.02] p-[clamp(1rem,1.2vw,1.5rem)] shadow-inner">
           <div className="mb-6 flex items-center gap-2">
             <div className="size-2 rounded-full bg-primary" />
             <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/60">
@@ -373,7 +413,7 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
 
       <Sheet onOpenChange={setDetailsOpen} open={isDetailsOpen}>
         <SheetContent
-          className="grid max-h-[90dvh] w-full max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden border-white/5 bg-[#050a18] rounded-t-[2.5rem] p-0 sm:max-w-md xl:hidden"
+          className="mx-auto grid h-[min(92dvh,46rem)] w-full max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-t-[2rem] border-white/5 bg-[#050a18] p-0 sm:w-[min(42rem,calc(100vw-2rem))] md:h-[min(86dvh,48rem)] md:rounded-t-[2.5rem] lg:w-[min(48rem,calc(100vw-3rem))] xl:hidden"
           side="bottom"
         >
           <SheetHeader className="border-white/5 border-b p-6 bg-white/[0.02]">
@@ -391,7 +431,9 @@ export function SalesWorkspace({ session }: { session: SalesTicketView }) {
               </div>
             </div>
           </SheetHeader>
-          <div className="p-6 overflow-hidden">{detailsPanel}</div>
+          <div className="min-h-0 overflow-hidden p-[clamp(1rem,3vw,1.5rem)]">
+            {detailsPanel}
+          </div>
         </SheetContent>
       </Sheet>
     </div>
@@ -412,19 +454,20 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function LeadToolsTab({ session }: { session: SalesTicketView }) {
+  const source = session.lead?.source ?? session.source;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-1">
         <DetailRow label="Nome" value={session.lead?.name ?? "--"} />
         <DetailRow label="E-mail" value={session.lead?.email ?? "--"} />
-        <DetailRow label="Telefone" value={session.lead?.phone ?? "--"} />
-        <DetailRow label="Temperatura" value="Lead Quente" />
-        <DetailRow label="Status" value={session.status} />
+        <DetailRow label="Telefone" value={session.lead?.phone ?? "Nenhum"} />
+        <DetailRow label="Temperatura" value={leadTemperatureLabel(session)} />
+        <DetailRow label="Origem" value={salesSourceLabel(source)} />
         <DetailRow
-          label="Origem"
-          value={session.lead?.source ?? session.source}
+          label="Campanha"
+          value={session.campaign?.name ?? "Nenhum"}
         />
-        <DetailRow label="Campanha" value="Promo Outono" />
       </div>
 
       <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
@@ -441,6 +484,19 @@ function LeadToolsTab({ session }: { session: SalesTicketView }) {
       </div>
     </div>
   );
+}
+
+function leadTemperatureLabel(session: SalesTicketView) {
+  return session.status === "in_progress" ? "Quente" : "Frio";
+}
+
+function salesSourceLabel(source?: string | null) {
+  if (source === "product_public_link") return "Link";
+  if (source === "storefront" || source === "store" || source === "loja") {
+    return "Vitrine";
+  }
+
+  return source ?? "--";
 }
 
 function ProductToolsTab({ session }: { session: SalesTicketView }) {
@@ -464,44 +520,46 @@ function ProductToolsTab({ session }: { session: SalesTicketView }) {
       <div className="grid gap-1">
         <DetailRow label="Preço" value={formatPrice(session.product?.price)} />
         <DetailRow
-          label="Benefício"
-          value={session.product?.main_benefit ?? "--"}
-        />
-        <DetailRow
           label="Estoque"
           value={
             session.product?.status === "active" ? "Disponível" : "Limitado"
           }
         />
       </div>
-
-      <Button className="w-full h-11 rounded-xl bg-white/[0.04] border border-white/5 hover:bg-white/[0.08] text-white font-bold gap-2">
-        Gerar Novo Link
-        <ArrowRight className="size-4" />
-      </Button>
     </div>
   );
 }
 
 function ActionsToolsTab({
-  mode,
-  setMode,
+  isConfirmingSale = false,
+  isSendingCheckout = false,
+  isTransferringToQueue = false,
+  onConfirmSale,
+  onSendCheckout,
+  onTransferToQueue,
 }: {
-  mode: "auto" | "copilot";
-  setMode: (mode: "auto" | "copilot") => void;
+  isConfirmingSale?: boolean;
+  isSendingCheckout?: boolean;
+  isTransferringToQueue?: boolean;
+  onConfirmSale?: () => void;
+  onSendCheckout?: () => void;
+  onTransferToQueue?: () => void;
 }) {
   const actions = [
-    { label: "Enviar Link de Checkout", primary: true, icon: CreditCard },
     {
-      label:
-        mode === "copilot"
-          ? "Ativar Modo IA Automática"
-          : "Ativar Modo Copiloto",
-      icon: Zap,
+      label: "Enviar Link de Checkout",
+      primary: true,
+      icon: CreditCard,
+      sendCheckout: true,
+      onClick: onSendCheckout,
     },
-    { label: "Chamar Agente Especialista", icon: UserRound },
-    { label: "Marcar como Ganho", icon: CheckCircle2 },
-    { label: "Transferir para Fila", icon: History },
+    { label: "Transferir para Fila", icon: History, transferToQueue: true },
+    {
+      label: "Marcar como Ganho",
+      icon: CheckCircle2,
+      confirmSale: true,
+      onClick: onConfirmSale,
+    },
     { label: "Encerrar Chat", icon: X },
   ];
 
@@ -515,19 +573,41 @@ function ActionsToolsTab({
               ? "bg-primary text-white shadow-lg shadow-primary/10 hover:shadow-primary/20"
               : "bg-white/[0.03] border-white/5 text-muted-foreground hover:bg-white/[0.08] hover:text-white",
           )}
-          key={action.label}
-          onClick={() =>
-            action.label.includes("Ativar") &&
-            setMode(mode === "copilot" ? "auto" : "copilot")
+          disabled={
+            (action.transferToQueue && isTransferringToQueue) ||
+            (action.confirmSale && isConfirmingSale) ||
+            (action.sendCheckout && isSendingCheckout)
           }
+          key={action.label}
+          onClick={() => {
+            if (action.transferToQueue) {
+              onTransferToQueue?.();
+              return;
+            }
+
+            action.onClick?.();
+          }}
           variant={action.primary ? "default" : "outline"}
         >
           <action.icon className="size-4 shrink-0" />
-          {action.label}
+          {action.transferToQueue && isTransferringToQueue
+            ? "Transferindo..."
+            : action.confirmSale && isConfirmingSale
+              ? "Encerrando..."
+              : action.sendCheckout && isSendingCheckout
+                ? "Enviando..."
+                : action.label}
         </Button>
       ))}
     </div>
   );
+}
+
+function buildCheckoutMessage(session: SalesTicketView) {
+  const productName = session.product?.name ?? "seu produto";
+  const checkoutUrl = session.product?.checkout_url ?? "";
+
+  return `Perfeito! Para finalizar a compra de ${productName}, acesse seu link seguro de checkout: ${checkoutUrl}`;
 }
 
 function SessionHistoryTab({ session }: { session: SalesTicketView }) {

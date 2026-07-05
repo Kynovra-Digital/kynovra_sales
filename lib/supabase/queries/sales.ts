@@ -7,6 +7,7 @@ export type SalesSessionRow = Tables<"sales_sessions">;
 export type SalesMessageRow = Tables<"sales_messages">;
 
 export type SalesTicketView = SalesSessionRow & {
+  campaign?: Tables<"campaigns"> | null;
   lead?: Tables<"leads"> | null;
   product?: Tables<"products"> | null;
 };
@@ -90,6 +91,24 @@ export async function closeSalesTicket(sessionId: string) {
   return data;
 }
 
+export async function confirmManualSale(
+  sessionId: string,
+  amount?: number | null,
+) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("confirm_manual_sale", {
+    p_amount: amount ?? undefined,
+    p_session_id: sessionId,
+  });
+
+  if (error) throw error;
+  return data as {
+    confirmation_id?: string;
+    message?: string;
+    success?: boolean;
+  };
+}
+
 export async function transferSalesTicket(sessionId: string) {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("transfer_sales_ticket", {
@@ -97,7 +116,7 @@ export async function transferSalesTicket(sessionId: string) {
   });
 
   if (error) throw error;
-  return data;
+  return data as { message?: string; session_id?: string; success?: boolean };
 }
 
 export async function sendSalesMessage(sessionId: string, content: string) {
@@ -162,20 +181,31 @@ async function hydrateSalesTickets(
   const leadIds = sessions.map((session) => session.lead_id).filter(Boolean);
   const productIds = sessions.map((session) => session.product_id);
 
-  const [{ data: leads }, { data: products }] = await Promise.all([
-    leadIds.length
-      ? supabase
-          .from("leads")
-          .select("*")
-          .in("id", leadIds as string[])
-      : Promise.resolve({ data: [] }),
-    productIds.length
-      ? supabase.from("products").select("*").in("id", productIds)
-      : Promise.resolve({ data: [] }),
-  ]);
+  const [{ data: leads }, { data: products }, { data: campaignProducts }] =
+    await Promise.all([
+      leadIds.length
+        ? supabase
+            .from("leads")
+            .select("*")
+            .in("id", leadIds as string[])
+        : Promise.resolve({ data: [] }),
+      productIds.length
+        ? supabase.from("products").select("*").in("id", productIds)
+        : Promise.resolve({ data: [] }),
+      productIds.length
+        ? supabase
+            .from("campaign_products")
+            .select("product_id, campaigns(*)")
+            .in("product_id", productIds)
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [] }),
+    ]);
 
   return sessions.map((session) => ({
     ...session,
+    campaign:
+      campaignProducts?.find((link) => link.product_id === session.product_id)
+        ?.campaigns ?? null,
     lead: leads?.find((lead) => lead.id === session.lead_id) ?? null,
     product:
       products?.find((product) => product.id === session.product_id) ?? null,

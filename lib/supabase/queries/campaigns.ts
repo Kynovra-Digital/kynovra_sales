@@ -127,3 +127,18 @@ export async function updateCampaign(
 export function archiveCampaign(id: string) {
   return updateCampaign(id, { status: "archived" });
 }
+
+export async function generateUniqueCampaignSlug(input: {
+  excludeCampaignId?: string | null;
+  name: string;
+  organizationId: string;
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("generate_unique_campaign_slug", {
+    p_exclude_campaign_id: input.excludeCampaignId ?? undefined,
+    p_name: input.name,
+    p_organization_id: input.organizationId,
+  });
+  if (error) throw error;
+  return data;
+}

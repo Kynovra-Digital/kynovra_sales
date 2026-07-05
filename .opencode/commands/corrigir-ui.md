@@ -1,7 +1,7 @@
 ---
 description: Corrigir UI premium, responsividade, duplicações e drawers.
 agent: build
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Corrija a UI do Kynovra Sales.

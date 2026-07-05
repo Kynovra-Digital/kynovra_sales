@@ -3,11 +3,28 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/database.types";
 
+const DASHBOARD_TIMELINE_LIMIT = 8;
+
 export type DashboardMetric = {
   description: string;
   glow: "blue" | "green" | "purple";
   title: string;
   trend?: string;
+  value: string;
+};
+
+export type DashboardPeriod = "today" | "7d" | "30d" | "month";
+
+export type DashboardAttendanceBreakdown = {
+  color: string;
+  label: string;
+  value: number;
+};
+
+export type DashboardAiPerformanceItem = {
+  delta?: string | null;
+  label: string;
+  tone: "green" | "red";
   value: string;
 };
 
@@ -20,149 +37,143 @@ export type DashboardOverview = {
     value: string;
   }>;
   metrics: DashboardMetric[];
+  attendance: {
+    breakdown: DashboardAttendanceBreakdown[];
+    total: number;
+  };
+  aiPerformance: {
+    items: DashboardAiPerformanceItem[];
+  };
 };
 
-export async function getDashboardOverview(): Promise<DashboardOverview> {
-  const supabase = createClient();
-  const [
-    salesSessions,
-    supportSessions,
-    checkoutEvents,
-    confirmations,
-    notifications,
-  ] = await Promise.all([
-    supabase.from("sales_sessions").select("status,created_at"),
-    supabase.from("support_sessions").select("status,created_at"),
-    supabase.from("checkout_events").select("event_type,created_at"),
-    supabase.from("sales_confirmations").select("amount,created_at"),
-    supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(8),
-  ]);
+type DashboardRpcResponse = DashboardOverview & {
+  generatedAt?: string;
+  period?: DashboardPeriod;
+};
 
-  for (const result of [
-    salesSessions,
-    supportSessions,
-    checkoutEvents,
-    confirmations,
-    notifications,
-  ]) {
-    if (result.error) {
-      throw result.error;
-    }
+function isDashboardOverview(value: unknown): value is DashboardOverview {
+  if (!value || typeof value !== "object") return false;
+
+  const overview = value as Partial<DashboardOverview>;
+
+  return (
+    Array.isArray(overview.metrics) &&
+    Array.isArray(overview.funnel) &&
+    Array.isArray(overview.events) &&
+    Boolean(overview.attendance) &&
+    Boolean(overview.aiPerformance)
+  );
+}
+
+export async function getDashboardOverview(
+  period: DashboardPeriod = "today",
+): Promise<DashboardOverview> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.rpc("get_dashboard_overview", {
+    p_period: period,
+  });
+
+  if (error) {
+    throw error;
   }
 
-  const sales = salesSessions.data ?? [];
-  const support = supportSessions.data ?? [];
-  const checkouts = checkoutEvents.data ?? [];
-  const salesDone = confirmations.data ?? [];
-  const checkoutSent = checkouts.filter(
-    (event) => event.event_type === "checkout_sent",
-  ).length;
-  const checkoutAccessed = checkouts.filter(
-    (event) => event.event_type === "checkout_accessed",
-  ).length;
-  const activeSales = sales.filter((item) => item.status === "in_progress");
-  const activeSupport = support.filter((item) => item.status === "in_progress");
-  const revenue = salesDone.reduce(
-    (total, item) => total + Number(item.amount ?? 0),
-    0,
-  );
+  const overview = data as DashboardRpcResponse | null;
 
-  return {
-    events: notifications.data ?? [],
-    funnel: [
-      { caption: "acessos", icon: "Eye", label: "Vitrine", value: "0" },
-      { caption: "visualizações", icon: "Box", label: "Produto", value: "0" },
-      {
-        caption: "acessos",
-        icon: "FileText",
-        label: "Pré-venda",
-        value: "0",
-      },
-      {
-        caption: "leads",
-        icon: "UsersRound",
-        label: "Sala",
-        value: String(sales.length),
-      },
-      {
-        caption: "envios",
-        icon: "Send",
-        label: "Checkout enviado",
-        value: String(checkoutSent),
-      },
-      {
-        caption: "cliques",
-        icon: "Eye",
-        label: "Checkout acessado",
-        value: String(checkoutAccessed),
-      },
-      {
-        caption: "vendas",
-        icon: "ShoppingCart",
-        label: "Venda confirmada",
-        value: String(salesDone.length),
-      },
-    ],
-    metrics: [
-      {
-        description: "Confirmadas no Supabase",
-        glow: "blue",
-        title: "Vendas Confirmadas",
-        trend: "dados reais",
-        value: String(salesDone.length),
-      },
-      {
-        description: "Receita confirmada",
-        glow: "purple",
-        title: "Receita Estimada",
-        trend: "Supabase",
-        value: revenue.toLocaleString("pt-BR", {
-          currency: "BRL",
-          style: "currency",
-        }),
-      },
-      {
-        description: "Eventos registrados",
-        glow: "blue",
-        title: "Checkouts Enviados",
-        value: String(checkoutSent),
-      },
-      {
-        description: "Alta intenção",
-        glow: "purple",
-        title: "Checkouts Acessados",
-        value: String(checkoutAccessed),
-      },
-      {
-        description: "Sessões em progresso",
-        glow: "green",
-        title: "Atendimentos Ativos",
-        value: String(activeSales.length),
-      },
-      {
-        description: "Chamados em progresso",
-        glow: "purple",
-        title: "Suportes Ativos",
-        value: String(activeSupport.length),
-      },
-      {
-        description: "Avaliações registradas",
-        glow: "purple",
-        title: "Avaliação Média",
-        value: "0,0",
-      },
-      {
-        description: "Vendas / salas",
-        glow: "blue",
-        title: "Taxa de Conversão",
-        value: sales.length
-          ? `${Math.round((salesDone.length / sales.length) * 100)}%`
-          : "0%",
-      },
-    ],
+  if (!isDashboardOverview(overview)) {
+    throw new Error("Resposta inválida do Supabase para a dashboard.");
+  }
+
+  return overview;
+}
+
+export function subscribeDashboardOverview(onChange: () => void) {
+  const supabase = createClient();
+  const channel = supabase
+    .channel("dashboard:overview")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "sales_sessions" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "support_sessions" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "checkout_events" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "sales_confirmations" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "campaign_tracking_events" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "campaign_metrics_daily" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "ai_agent_usage" },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "evaluations" },
+      onChange,
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
   };
+}
+
+export function subscribeDashboardTimeline(
+  onChange: (event: Tables<"notifications">) => void,
+) {
+  const supabase = createClient();
+  const channel = supabase
+    .channel("dashboard:timeline:notifications")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications" },
+      (payload) => {
+        onChange(payload.new as Tables<"notifications">);
+      },
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function mergeDashboardTimelineEvent(
+  overview: DashboardOverview | undefined,
+  event: Tables<"notifications">,
+): DashboardOverview | undefined {
+  if (!overview) return overview;
+
+  const events = [
+    event,
+    ...overview.events.filter((item) => item.id !== event.id),
+  ]
+    .sort(
+      (first, second) =>
+        new Date(second.created_at).getTime() -
+        new Date(first.created_at).getTime(),
+    )
+    .slice(0, DASHBOARD_TIMELINE_LIMIT);
+
+  return { ...overview, events };
 }

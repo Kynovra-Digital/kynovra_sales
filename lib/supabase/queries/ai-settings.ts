@@ -1,5 +1,6 @@
 "use client";
 
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/database.types";
 import { invokeEdgeFunction } from "@/lib/supabase/invoke-edge-function";
@@ -26,7 +27,7 @@ export async function saveGlobalAISettings(input: {
   maxOutputTokens?: number;
   modelId: string;
   organizationId: string;
-  provider: "openrouter" | "vercel";
+  provider: "siliconflow";
   temperature?: number;
   timeoutSeconds?: number;
 }) {
@@ -53,7 +54,7 @@ export const saveAiSettings = saveGlobalAISettings;
 export async function testGlobalAIConnection(input: {
   modelId?: string;
   organizationId?: string;
-  provider?: "openrouter" | "vercel";
+  provider?: "siliconflow";
 }): Promise<{ message: string; ok: boolean }> {
   const { data, error } = await invokeEdgeFunction<{
     message: string;
@@ -66,9 +67,7 @@ export async function testGlobalAIConnection(input: {
 
   if (error) {
     return {
-      message:
-        error.message ??
-        "Falha na conexão. Revise o modelo e o secret do AI Gateway.",
+      message: await resolveEdgeFunctionErrorMessage(error),
       ok: false,
     };
   }
@@ -77,3 +76,19 @@ export async function testGlobalAIConnection(input: {
 }
 
 export const testAiConnection = testGlobalAIConnection;
+
+async function resolveEdgeFunctionErrorMessage(error: unknown) {
+  if (error instanceof FunctionsHttpError) {
+    const payload = (await error.context.json().catch(() => null)) as {
+      message?: string;
+    } | null;
+
+    if (payload?.message) return payload.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Falha na conexão. Revise o modelo e os secrets do provedor de IA no Supabase.";
+}

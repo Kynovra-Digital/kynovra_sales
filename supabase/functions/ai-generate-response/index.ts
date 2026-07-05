@@ -1,10 +1,11 @@
 import {
   type AIProvider,
   generateAIText,
+  getAIProviderSetupMessage,
   hasAIProviderEnvironment,
   normalizeAIProvider,
 } from "../_shared/ai-provider.ts";
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 
 type AIRequestBody = {
@@ -18,7 +19,7 @@ type AIRequestBody = {
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse(request);
   }
 
   try {
@@ -37,7 +38,7 @@ Deno.serve(async (request) => {
     const modelId = body.modelId ?? saved?.model_id;
     if (!hasAIProviderEnvironment(provider)) {
       return jsonResponse(
-        { message: "Provedor de IA não configurado.", ok: false },
+        { message: getAIProviderSetupMessage(provider), ok: false },
         500,
       );
     }
@@ -62,7 +63,6 @@ Deno.serve(async (request) => {
     const { error } = await supabase.from(table).insert({
       content: generatedText.trim(),
       metadata: {
-        gateway: provider === "vercel",
         model: modelId,
         provider,
       },

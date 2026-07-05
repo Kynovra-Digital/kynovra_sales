@@ -585,6 +585,7 @@ export type Database = {
           slug: string;
           starts_at: string | null;
           status: string;
+          section_banner_url: string | null;
           updated_at: string;
         };
         Insert: {
@@ -599,6 +600,7 @@ export type Database = {
           slug: string;
           starts_at?: string | null;
           status?: string;
+          section_banner_url?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -613,6 +615,7 @@ export type Database = {
           slug?: string;
           starts_at?: string | null;
           status?: string;
+          section_banner_url?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -1358,6 +1361,7 @@ export type Database = {
           id: string;
           name: string;
           organization_id: string;
+          parent_slug: string | null;
           slug: string;
         };
         Insert: {
@@ -1365,6 +1369,7 @@ export type Database = {
           id?: string;
           name: string;
           organization_id: string;
+          parent_slug?: string | null;
           slug: string;
         };
         Update: {
@@ -1372,6 +1377,7 @@ export type Database = {
           id?: string;
           name?: string;
           organization_id?: string;
+          parent_slug?: string | null;
           slug?: string;
         };
         Relationships: [];
@@ -1557,6 +1563,7 @@ export type Database = {
           created_at: string;
           id: string;
           image_url: string | null;
+          image_urls: string[] | null;
           main_benefit: string | null;
           name: string;
           organization_id: string;
@@ -1587,6 +1594,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           image_url?: string | null;
+          image_urls?: string[] | null;
           main_benefit?: string | null;
           name: string;
           organization_id: string;
@@ -1617,6 +1625,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           image_url?: string | null;
+          image_urls?: string[] | null;
           main_benefit?: string | null;
           name?: string;
           organization_id?: string;
@@ -2098,6 +2107,23 @@ export type Database = {
         };
         Returns: string;
       };
+      generate_unique_campaign_slug: {
+        Args: {
+          p_exclude_campaign_id?: string;
+          p_name: string;
+          p_organization_id: string;
+        };
+        Returns: string;
+      };
+      insert_manual_product_evaluation: {
+        Args: {
+          p_product_id: string;
+          p_rating: number;
+          p_comment?: string | null;
+          p_ratings?: Json | null;
+        };
+        Returns: Json;
+      };
       get_global_ai_settings: {
         Args: { p_organization_id: string };
         Returns: Json;
@@ -2107,13 +2133,33 @@ export type Database = {
         Args: { p_product_slug: string };
         Returns: Json;
       };
+      get_hardness_master_prompts: {
+        Args: { p_organization_id: string };
+        Returns: Json;
+      };
+      save_hardness_master_prompts: {
+        Args: {
+          p_organization_id: string;
+          p_sales_master_prompt: string;
+          p_support_master_prompt: string;
+        };
+        Returns: Json;
+      };
       get_public_sales_session: {
         Args: { p_public_token: string };
+        Returns: Json;
+      };
+      get_dashboard_overview: {
+        Args: { p_period: string };
         Returns: Json;
       };
       get_public_support_session: {
         Args: { p_public_token: string };
         Returns: Json;
+      };
+      public_email_is_registered: {
+        Args: { p_email: string };
+        Returns: boolean;
       };
       list_public_active_products: { Args: never; Returns: Json };
       mark_all_notifications_read: { Args: never; Returns: Json };
@@ -2164,6 +2210,18 @@ export type Database = {
           p_provider?: string;
           p_temperature?: number;
           p_timeout_seconds?: number;
+        };
+        Returns: Json;
+      };
+      get_public_storefront: { Args: never; Returns: Json };
+      storefront_primary_categories: { Args: never; Returns: Json };
+      get_public_storefront_categories: { Args: never; Returns: Json };
+      create_initial_organization: {
+        Args: {
+          p_about: string;
+          p_cnpj?: string | null;
+          p_name: string;
+          p_person_type: string;
         };
         Returns: Json;
       };

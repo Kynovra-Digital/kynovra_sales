@@ -24,7 +24,7 @@ export function MetricCard({
   return (
     <Card
       className={cn(
-        "dashboard-card group relative min-h-[6.5rem] overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/35 sm:min-h-[7rem]",
+        "dashboard-card group relative min-h-[6.25rem] overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/35 sm:min-h-[6.75rem]",
         "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent",
         glow === "blue" && "shadow-[0_0_36px_rgb(37_99_235_/_0.12)]",
         glow === "purple" && "shadow-[0_0_36px_rgb(124_58_237_/_0.12)]",
@@ -39,7 +39,7 @@ export function MetricCard({
           glow === "green" && "bg-kynovra-digital-green/14",
         )}
       />
-      <CardHeader className="relative flex flex-row items-start justify-between gap-2 pb-1">
+      <CardHeader className="relative flex flex-row items-start justify-between gap-2 px-4 pb-1 pt-4">
         <div className="min-w-0">
           <CardTitle className="font-medium text-muted-foreground text-xs leading-4">
             {title}
@@ -65,7 +65,7 @@ export function MetricCard({
           </div>
         ) : null}
       </CardHeader>
-      <CardContent className="relative flex items-end justify-between gap-3">
+      <CardContent className="relative flex items-end justify-between gap-3 px-4 pb-4">
         <div className="min-w-0">
           <strong className="block whitespace-nowrap font-semibold text-2xl leading-tight tracking-normal sm:text-[1.65rem]">
             {value}

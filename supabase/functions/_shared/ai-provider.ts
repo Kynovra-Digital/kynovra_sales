@@ -1,13 +1,9 @@
 import {
-  ensureAIGatewayEnvironment,
-  generateAIGatewayText,
-} from "./ai-gateway.ts";
-import {
-  generateOpenRouterText,
-  hasOpenRouterEnvironment,
-} from "./openrouter.ts";
+  generateSiliconFlowText,
+  hasSiliconFlowEnvironment,
+} from "./siliconflow.ts";
 
-export type AIProvider = "openrouter" | "vercel";
+export type AIProvider = "siliconflow";
 
 type GenerateAITextOptions = {
   maxOutputTokens?: number | null;
@@ -18,17 +14,22 @@ type GenerateAITextOptions = {
 };
 
 export function hasAIProviderEnvironment(provider: AIProvider) {
-  return provider === "openrouter"
-    ? hasOpenRouterEnvironment()
-    : Boolean(ensureAIGatewayEnvironment());
+  if (provider === "siliconflow") return hasSiliconFlowEnvironment();
+  return false;
+}
+
+export function getAIProviderSetupMessage(provider: AIProvider) {
+  if (provider === "siliconflow") {
+    return "SiliconFlow não configurado. Cadastre o secret SILICONFLOW_API_KEY e redeploye as Edge Functions de IA.";
+  }
+
+  return "Provedor de IA não configurado.";
 }
 
 export function generateAIText(options: GenerateAITextOptions) {
-  return options.provider === "openrouter"
-    ? generateOpenRouterText(options)
-    : generateAIGatewayText(options);
+  return generateSiliconFlowText(options);
 }
 
-export function normalizeAIProvider(value?: string | null): AIProvider {
-  return value === "openrouter" ? "openrouter" : "vercel";
+export function normalizeAIProvider(_value?: string | null): AIProvider {
+  return "siliconflow";
 }

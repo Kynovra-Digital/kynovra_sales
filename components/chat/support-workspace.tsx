@@ -13,6 +13,7 @@ import {
 import { type FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AIHarnessPanel } from "@/components/chat/ai-harness-panel";
+import { FormattedContent } from "@/components/chat/formatted-content";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,8 +80,8 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
   }
 
   const detailsPanel = (
-    <Tabs defaultValue="resolucao">
-      <TabsList className="flex h-auto flex-wrap justify-start border border-white/10 bg-white/[0.045]">
+    <Tabs defaultValue="resolucao" className="flex h-full min-h-0 flex-col">
+      <TabsList className="flex h-auto shrink-0 flex-wrap justify-start border border-white/10 bg-white/[0.045]">
         {["Cliente", "Produto", "IA Suporte", "Resolução", "Histórico"].map(
           (tab) => (
             <TabsTrigger
@@ -96,16 +97,28 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
           ),
         )}
       </TabsList>
-      <TabsContent className="mt-4" value="resolucao">
+      <TabsContent
+        className="premium-scrollbar mt-4 min-h-0 overflow-y-auto overflow-x-hidden"
+        value="resolucao"
+      >
         <SupportResolutionTab />
       </TabsContent>
-      <TabsContent className="mt-4" value="cliente">
+      <TabsContent
+        className="premium-scrollbar mt-4 min-h-0 overflow-y-auto overflow-x-hidden"
+        value="cliente"
+      >
         <SupportClientTab session={session} />
       </TabsContent>
-      <TabsContent className="mt-4" value="produto">
+      <TabsContent
+        className="premium-scrollbar mt-4 min-h-0 overflow-y-auto overflow-x-hidden"
+        value="produto"
+      >
         <SupportProductTab session={session} />
       </TabsContent>
-      <TabsContent className="mt-4" value="ia-suporte">
+      <TabsContent
+        className="premium-scrollbar mt-4 min-h-0 overflow-y-auto overflow-x-hidden"
+        value="ia-suporte"
+      >
         <AIHarnessPanel
           currentMessage={message}
           handledByType={session.handled_by_type}
@@ -117,18 +130,21 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
           sessionType="support"
         />
       </TabsContent>
-      <TabsContent className="mt-4" value="histórico">
+      <TabsContent
+        className="premium-scrollbar mt-4 min-h-0 overflow-y-auto overflow-x-hidden"
+        value="histórico"
+      >
         <SupportHistoryTab session={session} />
       </TabsContent>
     </Tabs>
   );
 
   return (
-    <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_clamp(22rem,27vw,29rem)] 2xl:grid-cols-[minmax(0,1fr)_clamp(24rem,25vw,31rem)]">
       <section className="data-panel grid h-full min-h-0 min-w-0 grid-rows-[56px_minmax(0,1fr)_64px] overflow-hidden">
         <div className="flex min-h-14 items-center justify-between gap-3 border-white/10 border-b p-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-kynovra-tech-purple/20 bg-kynovra-tech-purple/15 text-purple-100">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/12 text-emerald-100">
               <MessageCircleMore className="size-4" />
             </span>
             <div className="min-w-0">
@@ -154,7 +170,7 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
             </Button>
           </div>
         </div>
-        <div className="premium-scrollbar min-h-0 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_50%_0%,rgb(124_58_237_/_0.07),transparent_28rem)] p-3 sm:p-4">
+        <div className="premium-scrollbar min-h-0 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_50%_0%,rgb(16_185_129_/_0.08),transparent_28rem),linear-gradient(180deg,rgb(13_19_43_/_0.08),transparent_42%)] p-3 sm:p-4">
           <div className="flex min-w-0 flex-col gap-3">
             {messages.map((item) => {
               const isClient = item.sender_type === "customer";
@@ -164,15 +180,15 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
                   className={cn(
                     "max-w-[85%] rounded-2xl border px-3 py-2.5 text-sm shadow-sm xl:max-w-[72%]",
                     isClient
-                      ? "ml-auto rounded-br-md border-primary/25 bg-primary/18 text-blue-50"
-                      : "rounded-bl-md border-white/10 bg-white/[0.055]",
+                      ? "ml-auto rounded-br-md border-[#2563EB]/35 bg-[#2563EB]/22 text-blue-50"
+                      : "rounded-bl-md border-emerald-300/15 bg-emerald-400/[0.075] text-emerald-50",
                   )}
                   key={item.id}
                 >
                   <p className="mb-1 font-medium text-[11px] text-muted-foreground uppercase tracking-[0.12em]">
                     {item.sender_type}
                   </p>
-                  {item.content}
+                  <FormattedContent>{item.content}</FormattedContent>
                 </div>
               );
             })}
@@ -214,12 +230,12 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
           </form>
         </div>
       </section>
-      <aside className="data-panel hidden min-h-0 min-w-0 overflow-hidden p-3 xl:block">
+      <aside className="data-panel hidden h-full min-h-0 min-w-0 overflow-hidden p-[clamp(0.875rem,1vw,1.25rem)] xl:block">
         {detailsPanel}
       </aside>
       <Sheet onOpenChange={setDetailsOpen} open={isDetailsOpen}>
         <SheetContent
-          className="grid max-h-[86dvh] w-full max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-t-2xl p-0 sm:max-w-md xl:hidden"
+          className="mx-auto grid h-[min(90dvh,44rem)] w-full max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-t-2xl p-0 sm:w-[min(40rem,calc(100vw-2rem))] md:h-[min(84dvh,46rem)] lg:w-[min(46rem,calc(100vw-3rem))] xl:hidden"
           side="bottom"
         >
           <SheetHeader className="border-white/10 border-b">
@@ -228,7 +244,7 @@ export function SupportWorkspace({ session }: { session: SupportTicketView }) {
               Cliente, produto, IA e resolução
             </SheetDescription>
           </SheetHeader>
-          <div className="premium-scrollbar min-h-0 overflow-y-auto overflow-x-hidden p-3">
+          <div className="min-h-0 overflow-hidden p-[clamp(0.875rem,2.5vw,1.25rem)]">
             {detailsPanel}
           </div>
         </SheetContent>
@@ -265,8 +281,8 @@ function SupportProductTab({ session }: { session: SupportTicketView }) {
   return (
     <div className="grid gap-3">
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
-        <div className="flex h-24 items-center justify-center bg-[radial-gradient(circle_at_50%_20%,rgb(124_58_237_/_0.28),transparent_70%)]">
-          <Package className="size-8 text-purple-100" />
+        <div className="flex h-24 items-center justify-center bg-[radial-gradient(circle_at_50%_20%,rgb(16_185_129_/_0.24),transparent_70%),linear-gradient(135deg,rgb(37_99_235_/_0.12),transparent)]">
+          <Package className="size-8 text-emerald-100" />
         </div>
         <div className="p-4">
           <p className="font-semibold">{session.product?.name ?? "Produto"}</p>
@@ -326,7 +342,7 @@ function SupportHistoryTab({ session }: { session: SupportTicketView }) {
     <div className="grid gap-3">
       {events.map(([event, date], index) => (
         <div className="grid grid-cols-[28px_minmax(0,1fr)] gap-3" key={event}>
-          <span className="mt-0.5 flex size-7 items-center justify-center rounded-full border border-kynovra-tech-purple/25 bg-kynovra-tech-purple/12 text-purple-100">
+          <span className="mt-0.5 flex size-7 items-center justify-center rounded-full border border-emerald-300/25 bg-emerald-400/12 text-emerald-100">
             {index === events.length - 1 ? (
               <CheckCircle2 className="size-4" />
             ) : (

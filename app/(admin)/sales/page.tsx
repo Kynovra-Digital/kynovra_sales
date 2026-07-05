@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   acceptSalesTicket,
   closeSalesTicket,
+  confirmManualSale,
   listMySalesTickets,
   listWaitingSalesTickets,
   openSalesTicket,
@@ -127,10 +128,17 @@ export default function SalesPage() {
 
   const transferMutation = useMutation({
     mutationFn: transferSalesTicket,
-    onSuccess: async () => {
+    onError: () =>
+      toast.error("Não foi possível devolver o atendimento para a fila."),
+    onSuccess: async (result) => {
+      if (result?.success === false) {
+        toast.error(result.message);
+        return;
+      }
+
       setActiveTicketId(null);
       await refreshTickets();
-      toast.success("Atendimento transferido para a IA.");
+      toast.success(result?.message || "Atendimento devolvido para a fila.");
     },
   });
 
@@ -140,6 +148,25 @@ export default function SalesPage() {
       setActiveTicketId(null);
       await refreshTickets();
       toast.success("Atendimento encerrado.");
+    },
+  });
+
+  const confirmSaleMutation = useMutation({
+    mutationFn: (ticket: SalesTicketView) =>
+      confirmManualSale(ticket.id, ticket.product?.price ?? null),
+    onError: () =>
+      toast.error("Não foi possível marcar este atendimento como ganho."),
+    onSuccess: async (result) => {
+      if (result?.success === false) {
+        toast.error(result.message);
+        return;
+      }
+
+      setActiveTicketId(null);
+      await refreshTickets();
+      toast.success(
+        result?.message || "Venda marcada como ganha e atendimento encerrado.",
+      );
     },
   });
 
@@ -366,12 +393,15 @@ export default function SalesPage() {
                   <div className="flex items-center gap-1.5">
                     <Button
                       className="hidden md:inline-flex h-9 rounded-xl border-white/5 bg-white/[0.02] hover:bg-white/[0.06]"
+                      disabled={transferMutation.isPending}
                       onClick={() => transferMutation.mutate(activeCall.id)}
                       size="sm"
                       variant="outline"
                     >
                       <History className="size-4 mr-2" />
-                      Transferir
+                      {transferMutation.isPending
+                        ? "Transferindo..."
+                        : "Transferir"}
                     </Button>
                     <Button
                       className="hidden md:inline-flex h-9 rounded-xl border-destructive/20 bg-destructive/5 text-red-400 hover:bg-destructive/10"
@@ -399,7 +429,15 @@ export default function SalesPage() {
                 </div>
               </header>
               <div className="min-h-0 overflow-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.02),transparent_50%)]">
-                <SalesWorkspace session={activeCall} />
+                <SalesWorkspace
+                  isConfirmingSale={confirmSaleMutation.isPending}
+                  isTransferringToQueue={transferMutation.isPending}
+                  onConfirmSale={() => confirmSaleMutation.mutate(activeCall)}
+                  onTransferToQueue={() =>
+                    transferMutation.mutate(activeCall.id)
+                  }
+                  session={activeCall}
+                />
               </div>
             </div>
           </motion.div>

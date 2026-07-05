@@ -1,7 +1,7 @@
 ---
 description: Planejar tarefa sem executar alterações.
 agent: plan
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Analise a solicitação atual, leia os arquivos relevantes e crie um plano completo.

@@ -1,7 +1,7 @@
 ---
 description: Corrigir problemas encontrados no projeto.
 agent: build
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Corrija os problemas solicitados.

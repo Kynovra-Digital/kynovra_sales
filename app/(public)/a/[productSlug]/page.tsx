@@ -4,12 +4,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, ShoppingBag, Star, Zap } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import type { FormEvent, ReactNode } from "react";
-import { useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PoweredBy } from "@/components/public/powered-by";
+import { PublicAccessModal } from "@/components/public/public-access-modal";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { usePublicAuth } from "@/hooks/use-public-auth";
 import {
   createSalesSessionFromProduct,
   findExistingSalesSessionFromProduct,
@@ -20,13 +21,19 @@ import { queryKeys } from "@/lib/supabase/query-keys";
 export default function ProductAttendanceEntryPage() {
   const params = useParams<{ productSlug: string }>();
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const { isLoading: authLoading, user } = usePublicAuth();
+  const [showAccessModal, setShowAccessModal] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryFn: () => getPublicProductBySlug(params.productSlug),
     queryKey: queryKeys.products.public(params.productSlug),
   });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setShowAccessModal(true);
+    }
+  }, [authLoading, user]);
 
   const { isFetching: isCheckingSession } = useQuery({
     enabled: Boolean(product && product.status === "active"),
@@ -48,8 +55,8 @@ export default function ProductAttendanceEntryPage() {
   const createMutation = useMutation({
     mutationFn: () =>
       createSalesSessionFromProduct({
-        customerEmail: email,
-        customerName: name,
+        customerEmail: user?.email ?? "",
+        customerName: getPublicUserDisplayName(user),
         productSlug: params.productSlug,
       }),
     onError: () => toast.error("Não foi possível iniciar o atendimento."),
@@ -59,10 +66,14 @@ export default function ProductAttendanceEntryPage() {
   function handleStart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!product || product.status !== "active") return;
+    if (!user) {
+      setShowAccessModal(true);
+      return;
+    }
     createMutation.mutate();
   }
 
-  if (isLoading || isCheckingSession) {
+  if (isLoading || authLoading || isCheckingSession) {
     return (
       <PublicState
         description="Estamos verificando se você já possui um atendimento em andamento..."
@@ -102,6 +113,13 @@ export default function ProductAttendanceEntryPage() {
 
   return (
     <main className="public-surface min-h-screen px-4 py-8 text-slate-900 md:py-12">
+      <PublicAccessModal
+        description="Entre com e-mail e senha ou continue com Google para iniciar um atendimento comercial seguro. Dados sensíveis adicionais serão pulados."
+        onOpenChange={setShowAccessModal}
+        open={showAccessModal}
+        redirectPath={`/a/${params.productSlug}`}
+        title="Entre para falar com especialista"
+      />
       <div className="mx-auto max-w-6xl">
         <header className="mb-10 flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2">
@@ -211,33 +229,31 @@ export default function ProductAttendanceEntryPage() {
               </h1>
 
               <p className="mt-4 text-slate-500 font-medium leading-relaxed">
-                Preencha seus dados para conectar-se a um especialista que
-                guiará sua jornada.
+                Entre com sua conta para conectar-se a um especialista que
+                guiará sua jornada, sem repetir dados sensíveis.
               </p>
 
               <form className="mt-8 grid gap-5" onSubmit={handleStart}>
-                <PublicField id="attendance-name" label="Qual seu nome?">
-                  <Input
-                    id="attendance-name"
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 transition-all focus:bg-white focus:ring-4 focus:ring-blue-100"
-                    onChange={(event) => setName(event.target.value)}
-                    placeholder="Ex: João Silva"
-                    required
-                    value={name}
-                  />
-                </PublicField>
-
-                <PublicField id="attendance-email" label="Seu melhor e-mail?">
-                  <Input
-                    id="attendance-email"
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 transition-all focus:bg-white focus:ring-4 focus:ring-blue-100"
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="Ex: joao@email.com"
-                    required
-                    type="email"
-                    value={email}
-                  />
-                </PublicField>
+                <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+                  <p className="font-bold text-blue-900 text-sm">
+                    Identificação segura
+                  </p>
+                  <p className="mt-1 text-blue-800/80 text-xs leading-5">
+                    {user
+                      ? `Você continuará como ${getPublicUserDisplayName(user)}.`
+                      : "Faça login para iniciar o atendimento. Nome e e-mail serão usados a partir da sua conta autenticada."}
+                  </p>
+                  {!user ? (
+                    <Button
+                      className="mt-3 h-10 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
+                      onClick={() => setShowAccessModal(true)}
+                      type="button"
+                      variant="outline"
+                    >
+                      Fazer login
+                    </Button>
+                  ) : null}
+                </div>
 
                 <Button
                   className="mt-2 h-14 rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-200 hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-300 transition-all active:scale-[0.98] font-bold text-base gap-3"
@@ -340,26 +356,10 @@ function PublicState({
   );
 }
 
-function PublicField({
-  children,
-  id,
-  label,
-}: {
-  children: ReactNode;
-  id: string;
-  label: string;
-}) {
-  return (
-    <div className="grid gap-2.5">
-      <label
-        className="font-bold text-slate-800 text-[11px] uppercase tracking-wider ml-1"
-        htmlFor={id}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
-  );
+function getPublicUserDisplayName(
+  user: ReturnType<typeof usePublicAuth>["user"],
+) {
+  return user?.name?.trim() || user?.email?.split("@").at(0) || "Cliente";
 }
 
 function LockKeyhole({ className }: { className?: string }) {

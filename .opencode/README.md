@@ -12,6 +12,5 @@ Somente dois agentes locais são permitidos:
 ## Regras
 
 - Não alterar `~/.config/opencode`.
-- Não salvar secrets em `opencode.jsonc`, skills, agents ou commands.
-- Skills ficam em `.opencode/skills/<name>/SKILL.md`.
+- Não salvar secrets em `opencode.jsonc`, agents ou commands.
 - Commands devem usar apenas `agent: plan` ou `agent: build`.

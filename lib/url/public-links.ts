@@ -17,6 +17,10 @@ export function buildSupportLink(origin: string) {
   return `${cleanOrigin(origin)}/suporte`;
 }
 
+export function buildStorefrontLink(origin: string) {
+  return cleanOrigin(origin);
+}
+
 export function buildSupportRoomLink(origin: string, publicToken: string) {
   return `${cleanOrigin(origin)}/suporte/sala/${publicToken}`;
 }

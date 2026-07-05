@@ -10,6 +10,7 @@ export type PublicProduct = Pick<
   | "checkout_url"
   | "id"
   | "image_url"
+  | "image_urls"
   | "main_benefit"
   | "name"
   | "price"
@@ -17,6 +18,67 @@ export type PublicProduct = Pick<
   | "status"
   | "support_info"
 >;
+
+export type PublicStorefrontProduct = Pick<
+  Tables<"products">,
+  | "category"
+  | "id"
+  | "image_url"
+  | "main_benefit"
+  | "name"
+  | "price"
+  | "public_cta"
+  | "public_description"
+  | "public_headline"
+  | "short_description"
+  | "show_price_publicly"
+  | "slug"
+  | "status"
+  | "subcategory"
+  | "support_info"
+>;
+
+export type PublicStorefrontCampaign = Pick<
+  Tables<"campaigns">,
+  | "banner_url"
+  | "description"
+  | "ends_at"
+  | "headline"
+  | "id"
+  | "name"
+  | "section_banner_url"
+  | "slug"
+  | "starts_at"
+  | "status"
+> & {
+  products: PublicStorefrontProduct[];
+};
+
+export type PublicStorefront = {
+  campaigns: PublicStorefrontCampaign[];
+};
+
+export type PublicProductReview = {
+  comment: string | null;
+  created_at: string;
+  id: string;
+  rating: number | null;
+  ratings: Record<string, number>;
+  session_type: string;
+};
+
+export type PublicStorefrontSubcategory = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type PublicStorefrontCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  subcategories: PublicStorefrontSubcategory[];
+};
 
 export type PublicRoomMessage = {
   content: string;
@@ -35,12 +97,44 @@ export async function getPublicProductBySlug(productSlug: string) {
   return data as PublicProduct;
 }
 
+export async function getPublicProductReviews(productSlug: string) {
+  const supabase = createClient();
+  const { data, error } = await rpcUntyped(
+    supabase,
+    "get_public_product_reviews",
+    {
+      p_product_slug: productSlug,
+    },
+  );
+
+  if (error) throw error;
+  return data as PublicProductReview[];
+}
+
 export async function listPublicActiveProducts() {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("list_public_active_products");
 
   if (error) throw error;
   return (data ?? []) as PublicProduct[];
+}
+
+export async function getPublicStorefront() {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("get_public_storefront");
+
+  if (error) throw error;
+  return (data ?? { campaigns: [] }) as PublicStorefront;
+}
+
+export async function getPublicStorefrontCategories() {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc(
+    "get_public_storefront_categories",
+  );
+
+  if (error) throw error;
+  return (data ?? []) as PublicStorefrontCategory[];
 }
 
 export async function createSalesSessionFromProduct(input: {
@@ -425,6 +519,7 @@ function setSalesVisitorId(visitorId: string) {
   }
 
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  // biome-ignore lint/suspicious/noDocumentCookie: escrita sincrona e universalmente suportada; o read path (getSalesVisitorId) precisa de acesso sync antes do RPC, e a Cookie Store API exigiria refator async em ambos os caminhos.
   document.cookie = `${SALES_VISITOR_COOKIE}=${encodeURIComponent(visitorId)}; Max-Age=${SALES_VISITOR_MAX_AGE_SECONDS}; Path=/; SameSite=Lax${secure}`;
 }
 

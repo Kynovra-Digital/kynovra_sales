@@ -61,6 +61,7 @@
   --sidebar-collapsed: 72px;
   --sidebar-width: var(--sidebar-expanded);
   --topbar-height: 64px;
+  --admin-density-scale: 1;
   --radius: 0.75rem;
 
   --background: #ffffff;
@@ -139,6 +140,60 @@
       );
     min-height: 100vh;
   }
+
+  html,
+  body,
+  * {
+    -ms-overflow-style: none;
+    scrollbar-color: transparent transparent;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    display: none;
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-button,
+  body::-webkit-scrollbar-button,
+  *::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    display: none;
+    background-color: transparent;
+  }
+
+  html::-webkit-scrollbar-corner,
+  body::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-corner {
+    display: none;
+    background: transparent;
+  }
+
+  @supports (scrollbar-width: thin) {
+    html,
+    body,
+    * {
+      scrollbar-color: transparent transparent;
+      scrollbar-width: none;
+    }
+  }
 }
 
 @layer components {
@@ -151,9 +206,21 @@
   }
 
   @media (width >= 64rem) {
-    .admin-shell {
-      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    :root {
+      --sidebar-expanded: 208px;
+      --sidebar-collapsed: 58px;
+      --topbar-height: 52px;
+      --admin-density-scale: 0.9;
     }
+
+    .admin-shell {
+      position: fixed;
+      inset: 0;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      width: 100vw;
+      height: 100dvh;
+    }
+
     .admin-shell[data-sidebar="collapsed"] {
       --sidebar-width: var(--sidebar-collapsed);
     }
@@ -174,22 +241,34 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
     height: 100dvh;
   }
 
   .admin-topbar {
     height: var(--topbar-height);
-    flex-shrink: 1;
+    flex-shrink: 0;
   }
 
   .admin-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
   }
 
   .page-shell {
-    @apply flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8;
+    @apply flex min-h-full w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8;
+  }
+
+  @media (width >= 64rem) {
+    .admin-shell {
+      font-size: calc(1rem * var(--admin-density-scale));
+    }
+
+    .page-shell {
+      @apply gap-7 px-8 py-5 xl:px-10 xl:py-6;
+    }
   }
 
   .data-panel {
@@ -201,21 +280,24 @@
   }
 
   .premium-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    -ms-overflow-style: none;
+    scrollbar-color: transparent transparent;
+    scrollbar-width: none;
   }
 
   .premium-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    display: none;
+    height: 0;
+    width: 0;
   }
 
   .premium-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    display: none;
+    background-color: transparent;
   }
 
   .premium-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: transparent;
   }
 
   .command-grid {

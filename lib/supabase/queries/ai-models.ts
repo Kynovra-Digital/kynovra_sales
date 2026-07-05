@@ -12,11 +12,23 @@ export type AIGatewayModel = {
   provider?: string;
 };
 
-export type AIProvider = "openrouter" | "vercel";
+export type AIProvider = "siliconflow";
+
+const SILICONFLOW_MODELS: AIGatewayModel[] = [
+  {
+    id: "deepseek-ai/DeepSeek-V4-Flash",
+    name: "DeepSeek V4 Flash",
+    provider: "SiliconFlow",
+  },
+];
 
 export async function listAiGatewayModels(
   provider: AIProvider,
 ): Promise<AIGatewayModel[]> {
+  if (provider === "siliconflow") {
+    return SILICONFLOW_MODELS;
+  }
+
   const { data, error } = await invokeEdgeFunction<{
     message?: string;
     models?: AIGatewayModel[];

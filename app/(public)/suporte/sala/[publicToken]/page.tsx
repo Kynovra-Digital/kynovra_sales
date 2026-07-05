@@ -1,15 +1,25 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Send } from "lucide-react";
+import {
+  LifeBuoy,
+  LockKeyhole,
+  Send,
+  ShieldCheck,
+  User,
+  Zap,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { FormattedContent } from "@/components/chat/formatted-content";
 import { PoweredBy } from "@/components/public/powered-by";
+import { PublicLoginPrompt } from "@/components/public/public-login-prompt";
 import { SessionFeedback } from "@/components/public/session-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePublicAuth } from "@/hooks/use-public-auth";
 import {
   getPublicSupportSession,
   listPublicSupportMessages,
@@ -18,17 +28,36 @@ import {
   triggerPublicSupportAITakeover,
 } from "@/lib/supabase/queries/public";
 import { queryKeys } from "@/lib/supabase/query-keys";
+import { cn } from "@/lib/utils";
 
 const AI_FIRST_MESSAGE =
   "Olá, tudo bem? Seu atendimento já foi iniciado. Vou analisar sua solicitação e te ajudar com os próximos passos.";
 
 export default function PublicSupportRoomPage() {
   const params = useParams<{ publicToken: string }>();
+  const { isLoading: authLoading, user } = usePublicAuth();
   const { data: session, isLoading } = useQuery({
     queryFn: () => getPublicSupportSession(params.publicToken),
     queryKey: queryKeys.publicRooms.support(params.publicToken),
+    enabled: !!user,
     refetchInterval: 2500,
   });
+
+  if (authLoading) {
+    return (
+      <PublicWaitingRoom statusMessage="Carregando autenticação segura..." />
+    );
+  }
+
+  if (!user) {
+    return (
+      <PublicLoginPrompt
+        description="Faça login com e-mail e senha ou continue com Google para acessar sua sala de suporte."
+        redirectPath={`/suporte/sala/${params.publicToken}`}
+        title="Entre para acessar o suporte"
+      />
+    );
+  }
 
   if (isLoading || !session) {
     return (
@@ -102,33 +131,41 @@ function PublicWaitingRoom({
   }, [publicToken, queryClient, session]);
 
   return (
-    <main className="public-surface grid min-h-screen place-items-center p-4 text-slate-950">
-      <section className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white/92 p-5 text-center shadow-[0_24px_80px_rgb(15_23_42_/_0.12)] backdrop-blur md:p-7">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 shadow-[0_0_36px_rgb(37_99_235_/_0.18)]">
-          <div className="size-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" />
+    <main className="public-surface grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.1),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.14),transparent_30%),linear-gradient(135deg,#f9fcff,#eff8ff_48%,#f6fffb)] p-4 text-[#0D132B]">
+      <section className="w-full max-w-xl rounded-[2rem] border border-white/90 bg-white/92 p-6 text-center shadow-[0_40px_120px_-24px_rgba(13,19,43,0.22)] backdrop-blur md:p-8">
+        <div className="mx-auto flex size-18 items-center justify-center rounded-[1.5rem] border border-emerald-100 bg-emerald-50 shadow-[0_18px_50px_rgba(16,185,129,0.16)]">
+          <div className="size-9 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-500" />
         </div>
-        <p className="mt-5 text-blue-700 text-xs font-medium uppercase tracking-[0.16em]">
+        <p className="mt-6 text-[#0f766e] text-[10px] font-bold uppercase tracking-[0.22em]">
           Sala de suporte
         </p>
-        <h1 className="mt-2 font-semibold text-2xl text-slate-950">
+        <h1 className="mt-3 font-bold text-3xl text-[#0D132B] tracking-tight">
           Estamos conectando você ao suporte.
         </h1>
-        <p className="mx-auto mt-3 max-w-md text-slate-600 text-sm">
+        <p className="mx-auto mt-4 max-w-md text-slate-600 text-sm font-medium leading-relaxed">
           Aguarde alguns segundos. Seu atendimento será iniciado em instantes.
         </p>
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
-          <p className="font-medium text-slate-950">
-            {String(session?.product_name ?? "Produto")}
-          </p>
-          <dl className="mt-3 grid gap-2 text-sm">
+        <div className="mt-6 rounded-2xl border border-blue-100 bg-[#f8fbff] p-5 text-left">
+          <div className="flex items-center gap-3">
+            <div className="flex size-11 items-center justify-center rounded-xl border border-blue-100 bg-white text-[#2563EB] shadow-sm">
+              <LifeBuoy className="size-5" />
+            </div>
+            <p className="min-w-0 truncate font-bold text-[#0D132B]">
+              {String(session?.product_name ?? "Produto")}
+            </p>
+          </div>
+          <dl className="mt-4 grid gap-2 text-sm">
             <InfoRow label="Motivo" value={reason ?? "--"} />
             <InfoRow label="Status" value="Aguardando aceite" />
           </dl>
         </div>
-        <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 text-sm">
+        <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[#047857] text-sm font-bold">
+          <ShieldCheck className="size-4 animate-pulse" />
           {statusMessage}
         </div>
-        <PoweredBy />
+        <div className="mt-8 border-slate-100 border-t pt-6">
+          <PoweredBy />
+        </div>
       </section>
     </main>
   );
@@ -142,20 +179,23 @@ function PublicClosedState({
   session: Record<string, unknown>;
 }) {
   return (
-    <main className="public-surface grid min-h-screen place-items-center p-4 text-slate-950">
-      <section className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white/92 p-6 text-center shadow-[0_24px_80px_rgb(15_23_42_/_0.12)]">
-        <p className="text-blue-700 text-xs font-medium uppercase tracking-[0.16em]">
+    <main className="public-surface grid min-h-screen place-items-center bg-[linear-gradient(135deg,#f8fbff,#eef6ff_52%,#f7fffb)] p-4 text-[#0D132B]">
+      <section className="w-full max-w-lg rounded-[2rem] border border-white/90 bg-white/92 p-8 text-center shadow-[0_40px_120px_-24px_rgba(13,19,43,0.18)]">
+        <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+          <LockKeyhole className="size-7" />
+        </div>
+        <p className="text-[#2563EB] text-[10px] font-bold uppercase tracking-[0.2em]">
           Suporte encerrado
         </p>
-        <h1 className="mt-3 font-semibold text-2xl">
-          Esta sala foi encerrada.
-        </h1>
+        <h1 className="mt-3 font-bold text-2xl">Esta sala foi encerrada.</h1>
         <p className="mt-3 text-slate-600 text-sm">
           O suporte de {String(session.product_name ?? "produto")} não está mais
           ativo.
         </p>
         <SessionFeedback publicToken={publicToken} sessionType="support" />
-        <PoweredBy />
+        <div className="mt-8 border-slate-100 border-t pt-6">
+          <PoweredBy />
+        </div>
       </section>
     </main>
   );
@@ -205,16 +245,26 @@ function PublicSupportChatRoom({
   }
 
   return (
-    <main className="public-surface min-h-screen p-3 text-slate-950 sm:p-4">
-      <section className="mx-auto grid max-w-6xl gap-4 py-3 md:py-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
-        <aside className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-[0_18px_50px_rgb(15_23_42_/_0.08)] backdrop-blur">
-          <p className="text-blue-700 text-xs font-medium uppercase tracking-[0.12em]">
+    <main className="public-surface min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.1),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.14),transparent_34%),linear-gradient(135deg,#f9fcff,#eff8ff_48%,#f6fffb)] p-3 text-[#0D132B] sm:p-6 md:p-8">
+      <section className="mx-auto grid max-w-6xl gap-6 h-[calc(100vh-3rem)] md:h-[calc(100vh-4rem)] lg:grid-cols-[22rem_minmax(0,1fr)]">
+        <aside className="flex flex-col rounded-[1.75rem] border border-white/90 bg-white/88 p-6 shadow-[0_24px_70px_rgba(13,19,43,0.1)] backdrop-blur">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-[#0f766e] text-white shadow-lg shadow-emerald-200">
+              <LifeBuoy className="size-5" />
+            </div>
+            <p className="font-bold text-[#0D132B]">Kynovra Support</p>
+          </div>
+          <p className="text-[#0f766e] text-[10px] font-bold uppercase tracking-[0.2em]">
             Sala de suporte
           </p>
-          <h1 className="mt-2 font-semibold text-2xl">
+          <h1 className="mt-2 font-bold text-2xl text-[#0D132B] tracking-tight">
             {String(session.product_name ?? "Produto")}
           </h1>
-          <dl className="mt-4 grid gap-2 text-sm">
+          <p className="mt-4 text-slate-600 text-sm font-medium leading-relaxed">
+            Atendimento pós-venda com leitura limpa, histórico preservado e
+            conexão segura com a equipe.
+          </p>
+          <dl className="mt-6 grid gap-2 text-sm">
             <InfoRow label="Motivo" value={String(session.reason ?? "--")} />
             <InfoRow label="Status" value="Atendimento iniciado" />
             <InfoRow
@@ -222,48 +272,69 @@ function PublicSupportChatRoom({
               value={String(session.continuity_code ?? "--")}
             />
           </dl>
+          <div className="mt-auto hidden border-slate-100 border-t pt-6 lg:block">
+            <PoweredBy />
+          </div>
         </aside>
-        <section className="flex h-[calc(100vh-12rem)] min-h-[32rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-[0_22px_70px_rgb(15_23_42_/_0.1)] lg:h-[calc(100vh-5rem)]">
-          <div className="border-slate-200 border-b p-3">
-            <p className="font-semibold">
-              {session.handled_by_type === "ai"
-                ? "IA de Suporte Kynovra"
-                : "Equipe de Suporte Kynovra"}
-            </p>
-            <p className="text-emerald-600 text-sm">atendimento iniciado</p>
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-[2rem] border border-white/90 bg-white/96 shadow-[0_34px_100px_-24px_rgba(13,19,43,0.22)]">
+          <div className="flex items-center gap-4 border-blue-100 border-b bg-white/70 px-6 py-4 backdrop-blur-sm">
+            <div className="relative">
+              <div className="flex size-10 items-center justify-center rounded-full bg-[#ecfdf5] text-slate-500 ring-1 ring-emerald-100">
+                {session.handled_by_type === "ai" ? (
+                  <Zap className="size-5 fill-current text-[#0f766e]" />
+                ) : (
+                  <User className="size-5" />
+                )}
+              </div>
+              <span className="absolute right-0 bottom-0 size-3 rounded-full border-2 border-white bg-emerald-500 shadow-sm" />
+            </div>
+            <div>
+              <p className="font-bold text-[#0D132B] leading-none">
+                {session.handled_by_type === "ai"
+                  ? "IA de Suporte Kynovra"
+                  : "Equipe de Suporte Kynovra"}
+              </p>
+              <p className="mt-1 text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                Atendimento iniciado
+              </p>
+            </div>
           </div>
           <div
-            className="flex flex-1 flex-col gap-3 overflow-y-auto p-3"
+            className="premium-scrollbar flex flex-1 flex-col gap-4 overflow-y-auto bg-[linear-gradient(180deg,#ffffff,#f8fbff)] p-6 scroll-smooth"
             ref={scrollRef}
           >
             {messages.length === 0 ? (
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-slate-100 p-3 text-sm md:max-w-md">
-                {session.handled_by_type === "ai"
-                  ? AI_FIRST_MESSAGE
-                  : "Olá, tudo bem? Seu atendimento de suporte já foi iniciado. Vou te ajudar com os próximos passos."}
+              <div className="max-w-[85%] rounded-[1.5rem] rounded-bl-none border border-slate-200 bg-white p-4 text-slate-800 text-sm font-medium leading-relaxed shadow-sm md:max-w-md">
+                <FormattedContent>
+                  {session.handled_by_type === "ai"
+                    ? AI_FIRST_MESSAGE
+                    : "Olá, tudo bem? Seu atendimento de suporte já foi iniciado. Vou te ajudar com os próximos passos."}
+                </FormattedContent>
               </div>
             ) : (
               messages.map((item) => (
                 <div
-                  className={
+                  className={cn(
+                    "max-w-[85%] rounded-[1.5rem] p-4 text-sm font-medium leading-relaxed shadow-sm md:max-w-md",
                     item.sender_type === "customer"
-                      ? "ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-blue-600 p-3 text-sm text-white md:max-w-md"
-                      : "max-w-[85%] rounded-2xl rounded-bl-md bg-slate-100 p-3 text-sm md:max-w-md"
-                  }
+                      ? "ml-auto rounded-br-none bg-[#0D132B] text-white shadow-blue-200"
+                      : "rounded-bl-none border border-slate-200 bg-white text-slate-800",
+                  )}
                   key={item.id}
                 >
-                  {item.content}
+                  <FormattedContent>{item.content}</FormattedContent>
                 </div>
               ))
             )}
           </div>
           <form
-            className="border-slate-200 border-t p-3"
+            className="border-blue-100 border-t bg-white p-4 md:p-6"
             onSubmit={handleSubmit}
           >
             <PublicField id="public-support-message" label="Mensagem">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Input
+                  className="h-12 rounded-2xl border-emerald-100 bg-[#f6fffb] px-5 transition-all font-medium focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   id="public-support-message"
                   onChange={(event) => setMessage(event.target.value)}
                   placeholder="Digite sua mensagem..."
@@ -271,18 +342,28 @@ function PublicSupportChatRoom({
                 />
                 <Button
                   aria-label="Enviar mensagem"
-                  disabled={sendMutation.isPending}
+                  className="size-12 shrink-0 rounded-2xl bg-[#0f766e] shadow-emerald-100 shadow-lg transition-all hover:bg-[#0b5f59] active:scale-95"
+                  disabled={sendMutation.isPending || !message.trim()}
                   size="icon"
                   type="submit"
                 >
-                  <Send />
+                  {sendMutation.isPending ? (
+                    <div className="size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  ) : (
+                    <Send className="size-5" />
+                  )}
                 </Button>
               </div>
             </PublicField>
+            <p className="mt-3 text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+              Sua conversa é privada e segura
+            </p>
           </form>
         </section>
       </section>
-      <PoweredBy />
+      <div className="mt-4 lg:hidden">
+        <PoweredBy />
+      </div>
     </main>
   );
 }
@@ -301,9 +382,9 @@ function isStartedSession(session: Record<string, unknown>) {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="rounded-xl border border-blue-100 bg-white px-3 py-2 shadow-sm">
       <dt className="text-slate-500 text-xs">{label}</dt>
-      <dd className="mt-1 font-medium">{value}</dd>
+      <dd className="mt-1 font-semibold text-[#0D132B]">{value}</dd>
     </div>
   );
 }
@@ -319,7 +400,7 @@ function PublicField({
 }) {
   return (
     <div className="grid gap-2">
-      <label className="font-medium text-slate-700 text-xs" htmlFor={id}>
+      <label className="font-semibold text-slate-700 text-xs" htmlFor={id}>
         {label}
       </label>
       {children}

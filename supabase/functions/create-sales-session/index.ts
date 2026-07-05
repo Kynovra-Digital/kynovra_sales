@@ -1,4 +1,4 @@
-import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 
 type CreateSalesSessionBody = {
@@ -10,7 +10,7 @@ type CreateSalesSessionBody = {
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse(request);
   }
 
   try {

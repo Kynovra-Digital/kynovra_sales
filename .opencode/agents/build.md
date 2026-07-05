@@ -1,7 +1,7 @@
 ---
 name: build
 description: Agente executor. Primeiro planeja a tarefa, depois altera arquivos, executa comandos permitidos, corrige erros e valida a entrega.
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Você é o agente BUILD do Kynovra Sales.

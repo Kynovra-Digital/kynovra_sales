@@ -27,18 +27,10 @@ export function AdminSidebar({
   onNavigate,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { permissions, profile, user } = useAuth();
+  const { permissions } = useAuth();
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const collapsed = mobile ? false : isCollapsed;
-  const displayName =
-    profile?.full_name || user?.email?.split("@").at(0) || "Usuário";
-  const initials = displayName
-    .split(" ")
-    .map((part) => part.at(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
   const visibleNavigationGroups = adminNavigationGroups
     .map((group) => ({
       ...group,
@@ -175,36 +167,6 @@ export function AdminSidebar({
       </nav>
 
       <div className="relative shrink-0 border-white/5 border-t p-4 flex flex-col gap-3">
-        <div
-          className={cn(
-            "flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-2.5 transition-all duration-300 hover:bg-white/[0.04]",
-            collapsed && "justify-center px-0 bg-transparent border-none",
-          )}
-        >
-          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/40 to-kynovra-tech-purple/40 ring-1 ring-white/10">
-            <span className="font-bold text-xs text-white">
-              {initials || "KS"}
-            </span>
-            <span className="absolute right-0 bottom-0 size-2.5 rounded-full border-2 border-sidebar bg-kynovra-digital-green shadow-[0_0_10px_rgb(16_185_129_/_0.5)]" />
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                className="min-w-0 flex-1 overflow-hidden"
-              >
-                <span className="block truncate font-semibold text-[13px] text-white">
-                  {displayName}
-                </span>
-                <span className="block truncate text-muted-foreground/70 text-[11px] font-medium">
-                  {profile?.role ?? "Sem perfil"}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
         {!mobile && (
           <Button
             className={cn(

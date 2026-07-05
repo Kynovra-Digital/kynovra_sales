@@ -1,7 +1,7 @@
 ---
 name: plan
 description: Agente de planejamento. Analisa o projeto, entende a tarefa, identifica riscos, propõe estratégia e cria plano de execução. Não altera arquivos e não executa mudanças.
-model: nvidia/moonshotai/kimi-k2.6
+model: opencode/minimax-m2.5-free
 ---
 
 Você é o agente PLAN do Kynovra Sales.

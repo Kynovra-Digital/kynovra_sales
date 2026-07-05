@@ -2,6 +2,8 @@ import {
   Bell,
   BookOpenText,
   Boxes,
+  BrainCircuit,
+  ChartNoAxesCombined,
   ClipboardCheck,
   Gauge,
   History,
@@ -11,6 +13,7 @@ import {
   Settings,
   ShieldCheck,
   Store,
+  UserRoundSearch,
   Users,
 } from "lucide-react";
 
@@ -54,15 +57,21 @@ export const adminNavigationGroups = [
         permission: "knowledge.view",
       },
       {
-        label: "Campanhas",
-        href: "/campaigns",
-        icon: Megaphone,
+        label: "Hardness",
+        href: "/hardness",
+        icon: BrainCircuit,
+        permission: "hardness.view",
+      },
+      {
+        label: "Loja",
+        href: "/store/campaigns",
+        icon: Store,
         permission: "campaigns.view",
       },
       {
         label: "Leads e Registros",
         href: "/leads",
-        icon: Store,
+        icon: UserRoundSearch,
         permission: "leads.view",
       },
       {
@@ -120,7 +129,7 @@ export const quickActions = [
   },
   {
     label: "Nova campanha",
-    href: "/campaigns",
+    href: "/store/campaigns",
     icon: Megaphone,
     permission: "campaigns.view",
   },
@@ -138,7 +147,7 @@ export const quickActions = [
   {
     label: "Revisar IA",
     href: "/settings#ia",
-    icon: Settings,
+    icon: ChartNoAxesCombined,
     permission: "settings.view",
   },
 ] as const;

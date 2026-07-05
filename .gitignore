@@ -48,6 +48,7 @@ test-results
 
 # local AI/coding agents
 .agents/
+.claude/
 .codex/
 .opencode/
 AGENTS.md

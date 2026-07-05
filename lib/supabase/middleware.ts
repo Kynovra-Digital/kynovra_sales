@@ -2,10 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import type { Database } from "./database.types";
 
+const adminRoles = [
+  "owner",
+  "founder",
+  "superadmin",
+  "management",
+  "admin",
+  "supervisor",
+];
+
 const adminPrefixes = [
   "/audit",
   "/campaigns",
   "/dashboard",
+  "/hardness",
   "/inventory",
   "/knowledge-base",
   "/leads",
@@ -14,16 +24,27 @@ const adminPrefixes = [
   "/quality",
   "/sales",
   "/settings",
+  "/store",
   "/team",
 ];
 
 export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const pathname = request.nextUrl.pathname;
+  const isAdminRoute = adminPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+  const isLoginRoute = pathname === "/login";
+  const isWelcomeRoute = pathname === "/welcome";
 
   let response = NextResponse.next({
     request,
   });
+
+  if (!(isAdminRoute || isLoginRoute || isWelcomeRoute)) {
+    return response;
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return response;
@@ -58,22 +79,50 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAdminRoute = adminPrefixes.some(
-    (prefix) =>
-      request.nextUrl.pathname === prefix ||
-      request.nextUrl.pathname.startsWith(`${prefix}/`),
-  );
-
   if (isAdminRoute && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && request.nextUrl.pathname === "/login") {
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, organization_id, role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const hasOrganization = Boolean(profile?.organization_id);
+    const hasAdminRole = adminRoles.includes(profile?.role ?? "");
+
+    if (isAdminRoute && !hasOrganization) {
+      const welcomeUrl = request.nextUrl.clone();
+      welcomeUrl.pathname = "/welcome";
+      welcomeUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(welcomeUrl);
+    }
+
+    if (isAdminRoute && !hasAdminRole) {
+      const storeUrl = request.nextUrl.clone();
+      storeUrl.pathname = "/";
+      storeUrl.searchParams.set("access", "denied");
+      return NextResponse.redirect(storeUrl);
+    }
+
+    if (isWelcomeRoute && hasOrganization) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.search = "";
+      return NextResponse.redirect(dashboardUrl);
+    }
+  }
+
+  if (user && isLoginRoute) {
+    const next = request.nextUrl.searchParams.get("next");
     const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
+    dashboardUrl.pathname =
+      next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
     dashboardUrl.search = "";
     return NextResponse.redirect(dashboardUrl);
   }

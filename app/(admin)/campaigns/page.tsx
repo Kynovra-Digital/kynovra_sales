@@ -1,5 +1,5 @@
-import { ModulePage } from "@/components/modules/module-page";
+import { redirect } from "next/navigation";
 
 export default function CampaignsPage() {
-  return <ModulePage moduleKey="campaigns" />;
+  redirect("/store/campaigns");
 }
