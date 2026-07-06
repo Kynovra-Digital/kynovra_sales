@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CheckCircle2,
-  Heart,
+  ExternalLink,
   MessageCircle,
   PackageCheck,
   ShieldCheck,
@@ -14,11 +14,12 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PoweredBy } from "@/components/public/powered-by";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { type PublicUser, usePublicAuth } from "@/hooks/use-public-auth";
 import {
   getPublicProductBySlug,
   getPublicProductReviews,
@@ -28,6 +29,8 @@ import { queryKeys } from "@/lib/supabase/query-keys";
 
 export default function ProductPreSalePage() {
   const params = useParams<{ productSlug: string }>();
+  const router = useRouter();
+  const { isLoading: authLoading, user } = usePublicAuth();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { data: product, isLoading } = useQuery({
     queryFn: () => getPublicProductBySlug(params.productSlug),
@@ -89,6 +92,8 @@ export default function ProductPreSalePage() {
     product.main_benefit ??
     product.support_info ??
     "Produto disponível para atendimento com um especialista Kynovra.";
+  const productPath = `/p/${product.slug}`;
+  const checkoutUrl = product.checkout_url?.trim() || null;
   const averageRating = getAverageRating(reviews);
   const safeSelectedImageIndex = productImages[selectedImageIndex]
     ? selectedImageIndex
@@ -248,25 +253,41 @@ export default function ProductPreSalePage() {
             />
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <Button
-              asChild
-              className="h-12 flex-1 rounded-none bg-orange-600 font-black text-white uppercase tracking-[0.12em] hover:bg-orange-500"
+              className="h-12 rounded-none bg-orange-600 font-black text-white uppercase tracking-[0.12em] hover:bg-orange-500"
+              disabled={authLoading}
+              onClick={() =>
+                requireAuthOrRun(productPath, user, router, () => {
+                  router.push(`/a/${product.slug}`);
+                })
+              }
+              type="button"
             >
-              <Link href={`/a/${product.slug}`}>
-                <MessageCircle className="size-4" />
-                Comprar com especialista
-              </Link>
+              <MessageCircle className="size-4" />
+              Falar com atendente
             </Button>
             <Button
-              className="h-12 rounded-none border-orange-200 text-orange-700 hover:bg-orange-50 sm:w-14"
+              className="h-12 flex-1 rounded-none bg-orange-600 font-black text-white uppercase tracking-[0.12em] hover:bg-orange-500"
+              disabled={authLoading || !checkoutUrl}
+              onClick={() =>
+                requireAuthOrRun(productPath, user, router, () => {
+                  if (checkoutUrl) {
+                    window.location.assign(checkoutUrl);
+                  }
+                })
+              }
               type="button"
-              variant="outline"
             >
-              <Heart className="size-4" />
-              <span className="sr-only">Favoritar</span>
+              <ExternalLink className="size-4" />
+              Comprar agora
             </Button>
           </div>
+          {!checkoutUrl ? (
+            <p className="mt-2 text-slate-500 text-xs">
+              Checkout direto indisponível. Fale com atendente para continuar.
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -334,8 +355,17 @@ export default function ProductPreSalePage() {
               Clique em comprar para abrir o atendimento canônico do produto e
               continuar com especialista.
             </p>
-            <Button asChild className="mt-5 w-full rounded-none bg-black">
-              <Link href={`/a/${product.slug}`}>Abrir atendimento</Link>
+            <Button
+              className="mt-5 w-full rounded-none bg-black"
+              disabled={authLoading}
+              onClick={() =>
+                requireAuthOrRun(productPath, user, router, () => {
+                  router.push(`/a/${product.slug}`);
+                })
+              }
+              type="button"
+            >
+              Abrir atendimento
             </Button>
           </aside>
         </div>
@@ -344,6 +374,20 @@ export default function ProductPreSalePage() {
       <PoweredBy />
     </main>
   );
+}
+
+function requireAuthOrRun(
+  currentPath: string,
+  user: PublicUser | null,
+  router: { push: (href: string) => void },
+  action: () => void,
+) {
+  if (!user) {
+    router.push(`/login?next=${encodeURIComponent(currentPath)}`);
+    return;
+  }
+
+  action();
 }
 
 function ProductReviews({

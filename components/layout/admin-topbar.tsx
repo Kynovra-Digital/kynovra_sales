@@ -43,6 +43,7 @@ export function AdminTopbar() {
   const currentLabel = pathSegments.at(-1)?.replaceAll("-", " ") ?? "dashboard";
 
   const { data: notifications = [] } = useQuery({
+    enabled: Boolean(user),
     queryFn: listNotifications,
     queryKey: queryKeys.notifications.list,
   });
@@ -167,20 +168,22 @@ export function AdminTopbar() {
             <CircleHelp className="size-5" />
           </Button>
 
-          <Button
-            className="relative text-muted-foreground hover:text-white hover:bg-white/5"
-            aria-label="Abrir notificações"
-            onClick={() => setNotificationsOpen(true)}
-            size="icon"
-            variant="ghost"
-          >
-            <Bell className="size-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary font-bold text-[9px] text-white ring-2 ring-[#050a18]">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </Button>
+          {user ? (
+            <Button
+              className="relative text-muted-foreground hover:text-white hover:bg-white/5"
+              aria-label="Abrir notificações"
+              onClick={() => setNotificationsOpen(true)}
+              size="icon"
+              variant="ghost"
+            >
+              <Bell className="size-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary font-bold text-[9px] text-white ring-2 ring-[#050a18]">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Button>
+          ) : null}
         </div>
 
         <Separator

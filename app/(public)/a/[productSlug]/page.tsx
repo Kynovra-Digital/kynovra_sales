@@ -5,10 +5,8 @@ import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, ShoppingBag, Star, Zap } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PoweredBy } from "@/components/public/powered-by";
-import { PublicAccessModal } from "@/components/public/public-access-modal";
 import { Button } from "@/components/ui/button";
 import { usePublicAuth } from "@/hooks/use-public-auth";
 import {
@@ -22,21 +20,14 @@ export default function ProductAttendanceEntryPage() {
   const params = useParams<{ productSlug: string }>();
   const router = useRouter();
   const { isLoading: authLoading, user } = usePublicAuth();
-  const [showAccessModal, setShowAccessModal] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryFn: () => getPublicProductBySlug(params.productSlug),
     queryKey: queryKeys.products.public(params.productSlug),
   });
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      setShowAccessModal(true);
-    }
-  }, [authLoading, user]);
-
   const { isFetching: isCheckingSession } = useQuery({
-    enabled: Boolean(product && product.status === "active"),
+    enabled: Boolean(product && product.status === "active" && user),
     queryFn: async () => {
       const existing = await findExistingSalesSessionFromProduct(
         params.productSlug,
@@ -67,13 +58,15 @@ export default function ProductAttendanceEntryPage() {
     event.preventDefault();
     if (!product || product.status !== "active") return;
     if (!user) {
-      setShowAccessModal(true);
+      router.push(
+        `/login?next=${encodeURIComponent(`/a/${params.productSlug}`)}`,
+      );
       return;
     }
     createMutation.mutate();
   }
 
-  if (isLoading || authLoading || isCheckingSession) {
+  if (isLoading || (user && isCheckingSession)) {
     return (
       <PublicState
         description="Estamos verificando se você já possui um atendimento em andamento..."
@@ -113,13 +106,6 @@ export default function ProductAttendanceEntryPage() {
 
   return (
     <main className="public-surface min-h-screen px-4 py-8 text-slate-900 md:py-12">
-      <PublicAccessModal
-        description="Entre com e-mail e senha ou continue com Google para iniciar um atendimento comercial seguro. Dados sensíveis adicionais serão pulados."
-        onOpenChange={setShowAccessModal}
-        open={showAccessModal}
-        redirectPath={`/a/${params.productSlug}`}
-        title="Entre para falar com especialista"
-      />
       <div className="mx-auto max-w-6xl">
         <header className="mb-10 flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2">
@@ -246,11 +232,16 @@ export default function ProductAttendanceEntryPage() {
                   {!user ? (
                     <Button
                       className="mt-3 h-10 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
-                      onClick={() => setShowAccessModal(true)}
+                      disabled={authLoading}
+                      onClick={() =>
+                        router.push(
+                          `/login?next=${encodeURIComponent(`/a/${params.productSlug}`)}`,
+                        )
+                      }
                       type="button"
                       variant="outline"
                     >
-                      Fazer login
+                      {authLoading ? "Verificando..." : "Fazer login"}
                     </Button>
                   ) : null}
                 </div>

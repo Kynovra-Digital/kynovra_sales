@@ -24,7 +24,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PoweredBy } from "@/components/public/powered-by";
-import { PublicAccessModal } from "@/components/public/public-access-modal";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -44,7 +43,6 @@ import {
 } from "@/lib/supabase/queries/public";
 import { queryKeys } from "@/lib/supabase/query-keys";
 
-const STORE_VISITOR_SESSION_KEY = "kynovra-store:visitor-session";
 const STORE_ALL_CATEGORIES_FILTER = "__all_categories__";
 
 export default function StorefrontPage() {
@@ -52,7 +50,6 @@ export default function StorefrontPage() {
   const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState<
     string | null
   >(null);
-  const [showAccessModal, setShowAccessModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { data, isError, isLoading } = useQuery({
     queryFn: getPublicStorefront,
@@ -123,10 +120,6 @@ export default function StorefrontPage() {
     supabase.auth.getSession().then(({ data: sessionData }) => {
       const user = sessionData.session?.user ?? null;
       setCurrentUser(user);
-
-      if (!user && !hasValidStoreVisitorSession()) {
-        setShowAccessModal(true);
-      }
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -140,13 +133,6 @@ export default function StorefrontPage() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
-      <PublicAccessModal
-        description="Faça login com e-mail e senha ou continue com Google para ver ofertas, produtos e campanhas da Kynovra."
-        onOpenChange={setShowAccessModal}
-        open={showAccessModal}
-        redirectPath="/loja"
-        title="Como deseja continuar?"
-      />
       <header className="sticky top-0 z-30 w-full border-fuchsia-500/45 border-b bg-[#050507]/92 shadow-[0_0_28px_rgba(168,85,247,0.18)] backdrop-blur-xl">
         <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 md:px-5">
           <Link className="flex shrink-0 items-center gap-2" href="/">
@@ -174,30 +160,31 @@ export default function StorefrontPage() {
             <Link
               aria-label="Abrir suporte"
               className="flex size-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white"
-              href="/suporte"
+              href={currentUser ? "/suporte" : "/login?next=%2Fsuporte"}
             >
               <Headphones className="size-4" />
             </Link>
-            <button
-              aria-label="Notificações"
-              className="hidden size-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white sm:flex"
-              type="button"
-            >
-              <Bell className="size-4" />
-            </button>
+            {currentUser ? (
+              <button
+                aria-label="Notificações"
+                className="hidden size-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white sm:flex"
+                type="button"
+              >
+                <Bell className="size-4" />
+              </button>
+            ) : null}
             {currentUser ? (
               <StorefrontUserMenu
-                onSignedOut={() => setShowAccessModal(true)}
+                onSignedOut={() => undefined}
                 user={currentUser}
               />
             ) : (
-              <button
+              <Link
                 className="rounded-md border border-white/25 px-3 py-1.5 font-bold text-[11px] text-white transition hover:border-fuchsia-400 hover:bg-white/10"
-                onClick={() => setShowAccessModal(true)}
-                type="button"
+                href="/login?next=%2Floja"
               >
                 Sign In
-              </button>
+              </Link>
             )}
           </div>
         </div>
@@ -427,46 +414,6 @@ function getStringMetadata(
 ): string | null {
   const value = metadata[key];
   return typeof value === "string" && value.trim() ? value : null;
-}
-
-function hasValidStoreVisitorSession() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  try {
-    const rawSession = window.localStorage.getItem(STORE_VISITOR_SESSION_KEY);
-
-    if (!rawSession) {
-      return false;
-    }
-
-    const session = JSON.parse(rawSession) as {
-      email?: string;
-      expiresAt?: number;
-      name?: string;
-      visitorId?: string;
-    };
-
-    if (
-      typeof session.visitorId !== "string" ||
-      !session.visitorId ||
-      typeof session.name !== "string" ||
-      !session.name.trim() ||
-      typeof session.email !== "string" ||
-      !session.email.trim() ||
-      typeof session.expiresAt !== "number" ||
-      session.expiresAt <= Date.now()
-    ) {
-      window.localStorage.removeItem(STORE_VISITOR_SESSION_KEY);
-      return false;
-    }
-
-    return true;
-  } catch {
-    window.localStorage.removeItem(STORE_VISITOR_SESSION_KEY);
-    return false;
-  }
 }
 
 function normalizeSearch(value: string) {

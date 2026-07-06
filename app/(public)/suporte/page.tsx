@@ -4,10 +4,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowRight, KeyRound, MessageCircleMore } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { PoweredBy } from "@/components/public/powered-by";
-import { PublicAccessModal } from "@/components/public/public-access-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +21,6 @@ export default function PublicSupportEntryPage() {
   const router = useRouter();
   const { isLoading: authLoading, user } = usePublicAuth();
   const [mode, setMode] = useState<"code" | "new">("new");
-  const [showAccessModal, setShowAccessModal] = useState(false);
   const [productId, setProductId] = useState("");
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
@@ -34,11 +32,6 @@ export default function PublicSupportEntryPage() {
     queryKey: ["public", "products"],
   });
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      setShowAccessModal(true);
-    }
-  }, [authLoading, user]);
   const createMutation = useMutation({
     mutationFn: () =>
       createSupportSession({
@@ -65,7 +58,7 @@ export default function PublicSupportEntryPage() {
   function handleStartSupport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user) {
-      setShowAccessModal(true);
+      redirectToLogin(router, "/suporte");
       return;
     }
     createMutation.mutate();
@@ -74,7 +67,7 @@ export default function PublicSupportEntryPage() {
   function handleContinue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user) {
-      setShowAccessModal(true);
+      redirectToLogin(router, "/suporte");
       return;
     }
     validateMutation.mutate(continuityCode);
@@ -82,13 +75,6 @@ export default function PublicSupportEntryPage() {
 
   return (
     <main className="public-surface min-h-screen px-4 py-5 text-slate-950 md:py-8">
-      <PublicAccessModal
-        description="Entre com e-mail e senha ou continue com Google para abrir ou continuar seu suporte. Etapas sensíveis adicionais serão puladas."
-        onOpenChange={setShowAccessModal}
-        open={showAccessModal}
-        redirectPath="/suporte"
-        title="Entre para acessar o suporte"
-      />
       <section className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="rounded-3xl border border-white bg-[linear-gradient(135deg,#0d132b,#2563eb_58%,#7c3aed)] p-5 text-white shadow-[0_28px_80px_rgb(37_99_235_/_0.22)] md:p-8">
           <span className="inline-flex size-11 items-center justify-center rounded-xl border border-white/20 bg-white/10">
@@ -129,7 +115,7 @@ export default function PublicSupportEntryPage() {
               <h2 className="font-semibold text-2xl">Iniciar suporte</h2>
               <SupportAuthStatus
                 isLoading={authLoading}
-                onLogin={() => setShowAccessModal(true)}
+                onLogin={() => redirectToLogin(router, "/suporte")}
                 userLabel={user?.name || user?.email || null}
               />
               <PublicField id="support-product" label="Produto">
@@ -188,7 +174,7 @@ export default function PublicSupportEntryPage() {
               <h2 className="font-semibold text-2xl">Código de continuidade</h2>
               <SupportAuthStatus
                 isLoading={authLoading}
-                onLogin={() => setShowAccessModal(true)}
+                onLogin={() => redirectToLogin(router, "/suporte")}
                 userLabel={user?.name || user?.email || null}
               />
               <PublicField id="continuity-code" label="Código de continuidade">
@@ -235,6 +221,13 @@ export default function PublicSupportEntryPage() {
       </div>
     </main>
   );
+}
+
+function redirectToLogin(
+  router: { push: (href: string) => void },
+  nextPath: string,
+) {
+  router.push(`/login?next=${encodeURIComponent(nextPath)}`);
 }
 
 function SupportAuthStatus({

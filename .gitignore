@@ -51,11 +51,14 @@ test-results
 .claude/
 .codex/
 .opencode/
+docs/
 AGENTS.md
 CLAUDE.md
 opencode.json
 opencode.jsonc
 opencode.backup.json
+opencode.backups.json
+PROJECT_CONTEXT_FOR_AI.txt
 
 # typescript
 *.tsbuildinfo
