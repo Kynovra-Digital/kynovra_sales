@@ -13,6 +13,7 @@ import {
   Settings,
   ShieldCheck,
   Store,
+  UserCheck,
   UserRoundSearch,
   Users,
 } from "lucide-react";
@@ -73,6 +74,12 @@ export const adminNavigationGroups = [
         href: "/leads",
         icon: UserRoundSearch,
         permission: "leads.view",
+      },
+      {
+        label: "Clientes",
+        href: "/clients",
+        icon: UserCheck,
+        permission: "clients.view",
       },
       {
         label: "Estoque e Disponibilidade",

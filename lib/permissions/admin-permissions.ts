@@ -11,6 +11,7 @@ import {
   Settings,
   ShieldCheck,
   Store,
+  UserCheck,
   Users,
 } from "lucide-react";
 
@@ -63,6 +64,12 @@ export const visibleTabPermissions: PermissionOption[] = [
     icon: Store,
     key: "leads.view",
     label: "Leads e Registros",
+  },
+  {
+    description: "Permite gerenciar contas de clientes.",
+    icon: UserCheck,
+    key: "clients.view",
+    label: "Clientes",
   },
   {
     description: "Permite acessar estoque e disponibilidade.",

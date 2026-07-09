@@ -19,6 +19,7 @@ import {
   subscribeDashboardOverview,
   subscribeDashboardTimeline,
 } from "@/lib/supabase/queries/dashboard";
+import { listClients } from "@/lib/supabase/queries/clients";
 import { cn } from "@/lib/utils";
 
 const dashboardPeriods: Array<{ label: string; value: DashboardPeriod }> = [
@@ -85,9 +86,9 @@ const emptyDashboardOverview: DashboardOverview = {
       value: "R$ 0,00",
     },
     {
-      description: "Eventos registrados",
+      description: "Total de contas cadastradas",
       glow: "blue",
-      title: "Checkouts Enviados",
+      title: "Clientes Cadastrados",
       value: "0",
     },
     {
@@ -150,7 +151,12 @@ export default function DashboardPage() {
     queryKey: dashboardOverviewQueryKey(period),
   });
   const overview = data ?? emptyDashboardOverview;
-  const metrics = overview.metrics;
+  const metrics = [...overview.metrics];
+  const { data: clients = [] } = useQuery({
+    queryFn: listClients,
+    queryKey: ["clients", "count"],
+  });
+  metrics[2] = { ...metrics[2], value: String(clients.length) };
   const attendanceTotal = overview.attendance.total;
   const attendanceBreakdown = overview.attendance.breakdown;
   const aiPerformanceItems = overview.aiPerformance.items;
