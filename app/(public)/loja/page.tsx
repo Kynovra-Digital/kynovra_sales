@@ -147,18 +147,11 @@ export default function StorefrontPage() {
   ).length;
   const hasSearch = normalizedSearch.length > 0;
 
-  const [shownLoginToast, setShownLoginToast] = useState(false);
-
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getSession().then(({ data: sessionData }) => {
-      const user = sessionData.session?.user ?? null;
-      setCurrentUser(user);
-      if (!user && !shownLoginToast) {
-        toast.success("Login com Google disponível");
-        setShownLoginToast(true);
-      }
+      setCurrentUser(sessionData.session?.user ?? null);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -167,7 +160,30 @@ export default function StorefrontPage() {
       },
     );
 
-    return () => authListener.subscription.unsubscribe();
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      if (typeof window !== "undefined" && (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google) {
+        (window as Window & { google?: { accounts: { id: { initialize: (cfg: { client_id: string; callback: (res: { credential: string }) => void }) => void; prompt: () => void } } } }).google!.accounts.id.initialize({
+          client_id: "977887434311-smu4qh5kgp0hlbeje0e2f61j8dadh6fo.apps.googleusercontent.com",
+          callback: async (res: { credential: string }) => {
+            await supabase.auth.signInWithIdToken({
+              provider: "google",
+              token: res.credential,
+            });
+          },
+        });
+        (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google!.accounts.id.prompt();
+      }
+    };
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
