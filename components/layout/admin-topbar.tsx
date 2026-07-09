@@ -4,6 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
+  BellRing,
+  BellOff,
+  BellPlus,
+  BellElectric,
   ChevronDown,
   CircleHelp,
   Focus,
@@ -176,11 +180,15 @@ export function AdminTopbar() {
               size="icon"
               variant="ghost"
             >
-              <Bell className="size-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary font-bold text-[9px] text-white ring-2 ring-[#050a18]">
-                  {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCount > 0 ? (
+                <span className="relative">
+                  <BellRing className="size-5" />
+                  <span className="absolute -top-1.5 -right-1.5 flex size-3.5 items-center justify-center rounded-full bg-primary font-bold text-[8px] text-white ring-2 ring-[#050a18]">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 </span>
+              ) : (
+                <Bell className="size-5" />
               )}
             </Button>
           ) : null}
