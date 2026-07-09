@@ -171,10 +171,14 @@ export default function StorefrontPage() {
         (window as Window & { google?: { accounts: { id: { initialize: (cfg: { client_id: string; callback: (res: { credential: string }) => void }) => void; prompt: () => void } } } }).google!.accounts.id.initialize({
           client_id: "977887434311-smu4qh5kgp0hlbeje0e2f61j8dadh6fo.apps.googleusercontent.com",
           callback: async (res: { credential: string }) => {
-            await supabase.auth.signInWithIdToken({
+            const { error } = await supabase.auth.signInWithIdToken({
               provider: "google",
               token: res.credential,
             });
+            if (error) {
+              console.error("One Tap login error:", error);
+              toast.error("Erro ao fazer login: " + error.message);
+            }
           },
         });
         (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google!.accounts.id.prompt();
