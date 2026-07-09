@@ -103,9 +103,9 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      description="Use suas credenciais autorizadas ou entre com Google para acessar o Kynovra Sales."
-      eyebrow="Acesso interno"
-      title="Entrar no painel"
+      description="Entre com seu e-mail e senha para acessar a loja e acompanhar suas compras."
+      eyebrow="Sua conta"
+      title="Entrar na loja"
     >
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-2">

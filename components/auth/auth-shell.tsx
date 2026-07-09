@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bot,
   LockKeyhole,
   Radio,
   ShieldCheck,
@@ -18,9 +17,9 @@ type AuthShellProps = {
 };
 
 const signalItems = [
-  { icon: Activity, label: "Tickets", value: "tempo real" },
-  { icon: Bot, label: "IA", value: "supervisionada" },
-  { icon: UsersRound, label: "Equipe", value: "permissões" },
+  { icon: Activity, label: "Atendimento", value: "ao vivo" },
+  { icon: Sparkles, label: "Ofertas", value: "em destaque" },
+  { icon: UsersRound, label: "Especialistas", value: "prontos" },
 ];
 
 export function AuthShell({
@@ -30,26 +29,25 @@ export function AuthShell({
   title,
 }: AuthShellProps) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030711] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_8%,rgba(37,99,235,.34),transparent_30rem),radial-gradient(circle_at_92%_18%,rgba(124,58,237,.28),transparent_32rem),radial-gradient(circle_at_45%_100%,rgba(16,185,129,.15),transparent_28rem)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.22] [background-image:linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:44px_44px]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/70 to-transparent" />
+    <main className="relative min-h-screen overflow-hidden bg-[#070707] text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(239,68,68,.22),transparent_30rem),radial-gradient(circle_at_88%_22%,rgba(124,58,237,.18),transparent_32rem),radial-gradient(circle_at_48%_100%,rgba(16,185,129,.12),transparent_28rem)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/70 to-transparent" />
 
       <div className="relative grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(430px,.72fr)]">
         <section className="hidden min-h-0 flex-col justify-between p-8 lg:flex xl:p-10">
           <BrandHeader />
 
           <div className="max-w-4xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.045] px-3 py-1.5 text-blue-100 text-xs">
-              <Radio className="size-3.5 text-kynovra-digital-green" />
-              Operação comercial protegida
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.045] px-3 py-1.5 text-red-200 text-xs uppercase tracking-[0.18em]">
+              <Radio className="size-3.5 text-red-500" />
+              Loja protegida
             </div>
-            <h1 className="max-w-4xl font-semibold text-5xl leading-[1.02] tracking-normal xl:text-7xl">
-              Entre no centro de comando da operação digital.
+            <h1 className="max-w-4xl font-black text-5xl uppercase leading-[1.02] tracking-tight xl:text-7xl">
+              Compre com quem entende sua jornada.
             </h1>
-            <p className="mt-6 max-w-2xl text-blue-100/78 text-lg leading-8">
-              Vendas, suporte, campanhas, auditoria e IA em um painel pensado
-              para times que precisam responder rápido sem perder controle.
+            <p className="mt-6 max-w-2xl text-slate-300 text-lg leading-8">
+              Ofertas em destaque, atendimento ao vivo com especialistas e
+              suporte pos-venda em um unico lugar.
             </p>
 
             <div className="mt-10 grid max-w-3xl gap-3 xl:grid-cols-3">
@@ -62,13 +60,13 @@ export function AuthShell({
                     key={item.label}
                   >
                     <div className="mb-5 flex items-center justify-between">
-                      <Icon className="size-5 text-blue-200" />
-                      <span className="h-1.5 w-10 rounded-full bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400" />
+                      <Icon className="size-5 text-red-300" />
+                      <span className="h-1.5 w-10 rounded-full bg-gradient-to-r from-red-500 via-violet-400 to-emerald-400" />
                     </div>
-                    <p className="font-semibold text-2xl">{item.value}</p>
-                    <p className="mt-1 text-blue-100/70 text-sm">
-                      {item.label}
+                    <p className="font-black text-2xl uppercase tracking-tight">
+                      {item.value}
                     </p>
+                    <p className="mt-1 text-slate-400 text-sm">{item.label}</p>
                   </div>
                 );
               })}
@@ -78,29 +76,31 @@ export function AuthShell({
           <div className="grid max-w-3xl grid-cols-3 gap-3">
             <StatusPill icon={ShieldCheck} label="Supabase Auth" />
             <StatusPill icon={LockKeyhole} label="Acesso monitorado" />
-            <StatusPill icon={Zap} label="OAuth Google" />
+            <StatusPill icon={Zap} label="Resposta em tempo real" />
           </div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center p-4 sm:p-6 lg:border-white/10 lg:border-l lg:bg-black/10 lg:backdrop-blur-md">
+        <section className="flex min-h-screen items-center justify-center overflow-hidden p-4 sm:p-6 lg:border-white/10 lg:border-l lg:bg-black/15 lg:backdrop-blur-md">
           <div className="w-full max-w-[452px]">
             <div className="mb-8 lg:hidden">
               <BrandHeader compact />
             </div>
 
-            <div className="relative overflow-hidden rounded-lg border border-white/10 bg-[#070D1B]/92 p-5 shadow-[0_28px_90px_rgba(0,0,0,.48)] backdrop-blur-2xl sm:p-6">
-              <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/80 to-transparent" />
+            <div className="relative overflow-hidden rounded-lg border border-white/10 bg-[#0b0b0b] p-5 shadow-[0_28px_90px_rgba(0,0,0,.48)] backdrop-blur-2xl sm:p-6">
+              <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-red-400/80 to-transparent" />
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-blue-200 text-sm">{eyebrow}</p>
-                  <h2 className="mt-2 font-semibold text-3xl tracking-normal">
+                  <p className="font-black text-red-500 text-xs uppercase tracking-[0.24em]">
+                    {eyebrow}
+                  </p>
+                  <h2 className="mt-2 font-black text-3xl uppercase tracking-tight">
                     {title}
                   </h2>
-                  <p className="mt-2 text-muted-foreground text-sm leading-6">
+                  <p className="mt-2 text-slate-400 text-sm leading-6">
                     {description}
                   </p>
                 </div>
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/15 text-blue-100 shadow-[0_0_24px_rgba(37,99,235,.18)]">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-none border border-red-500/30 bg-red-500/10 text-red-200 shadow-[0_0_24px_rgba(239,68,68,.22)]">
                   <Sparkles className="size-5" />
                 </span>
               </div>
@@ -118,20 +118,20 @@ function BrandHeader({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="relative flex size-11 shrink-0 items-center justify-center rounded-lg border border-primary/35 bg-primary/15 font-bold text-blue-100 shadow-[0_0_26px_rgba(37,99,235,.22)]">
+        <span className="relative flex size-11 shrink-0 items-center justify-center rounded-none border border-red-500/40 bg-red-500/10 font-black text-red-100 shadow-[0_0_26px_rgba(239,68,68,.28)]">
           K
-          <span className="absolute -right-1 -bottom-1 size-3 rounded-full border-2 border-[#030711] bg-kynovra-digital-green" />
+          <span className="absolute -right-1 -bottom-1 size-3 rounded-full border-2 border-[#070707] bg-emerald-400" />
         </span>
         <div className="min-w-0">
-          <span className="block truncate font-bold text-sm tracking-[0.24em]">
+          <span className="block truncate font-black text-sm tracking-[0.24em]">
             KYNOVRA
           </span>
-          <span className="block truncate text-blue-300/80 text-xs tracking-[0.34em]">
+          <span className="block truncate text-red-300/80 text-xs tracking-[0.34em]">
             SALES
           </span>
         </div>
       </div>
-      <span className="flex shrink-0 items-center gap-2 rounded-full border border-kynovra-digital-green/25 bg-kynovra-digital-green/10 px-3 py-1.5 text-kynovra-digital-green text-xs">
+      <span className="flex shrink-0 items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-emerald-300 text-xs">
         <ShieldCheck className="size-3" />
         {compact ? "Seguro" : "Online"}
       </span>
@@ -147,8 +147,8 @@ function StatusPill({
   label: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[.035] px-3 py-2 text-muted-foreground text-xs">
-      <Icon className="size-4 shrink-0 text-blue-200" />
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[.035] px-3 py-2 text-slate-400 text-xs">
+      <Icon className="size-4 shrink-0 text-red-300" />
       <span className="truncate">{label}</span>
     </div>
   );

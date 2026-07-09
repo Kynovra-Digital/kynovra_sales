@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,11 +41,42 @@ export function NotificationsDrawer() {
     [queryClient],
   );
 
-  async function readAll() {
-    await markAllNotificationsRead();
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.notifications.list,
-    });
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onError: (error: unknown) => {
+      toast.error(
+        error instanceof Error ? error.message : "Falha ao marcar notificação.",
+      );
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.list,
+      });
+    },
+  });
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onError: (error: unknown) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Falha ao marcar todas notificações.",
+      );
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.list,
+      });
+    },
+  });
+
+  function handleReadAll() {
+    void markAllMutation.mutate();
+  }
+
+  function handleMarkRead(notificationId: string) {
+    void markReadMutation.mutate(notificationId);
   }
 
   return (
@@ -57,8 +89,15 @@ export function NotificationsDrawer() {
           </SheetDescription>
         </SheetHeader>
         <div className="px-3 pb-3 sm:px-4">
-          <Button onClick={readAll} size="sm" variant="outline">
-            Marcar todas como lidas
+          <Button
+            disabled={markAllMutation.isPending || notifications.length === 0}
+            onClick={handleReadAll}
+            size="sm"
+            variant="outline"
+          >
+            {markAllMutation.isPending
+              ? "Marcando..."
+              : "Marcar todas como lidas"}
           </Button>
         </div>
         <div className="flex flex-col gap-3 px-3 pb-6 sm:px-4">
@@ -82,17 +121,18 @@ export function NotificationsDrawer() {
                 </div>
                 <Button
                   className="mt-3 gap-2"
-                  onClick={async () => {
-                    await markNotificationRead(notification.id);
-                    await queryClient.invalidateQueries({
-                      queryKey: queryKeys.notifications.list,
-                    });
-                  }}
+                  disabled={
+                    markReadMutation.isPending || Boolean(notification.read_at)
+                  }
+                  onClick={() => handleMarkRead(notification.id)}
                   size="sm"
                   variant="outline"
                 >
                   <ExternalLink data-icon="inline-start" />
-                  Marcar como lida
+                  {markReadMutation.isPending &&
+                  markReadMutation.variables === notification.id
+                    ? "Marcando..."
+                    : "Marcar como lida"}
                 </Button>
               </div>
             ))

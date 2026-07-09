@@ -113,8 +113,8 @@ export async function saveTeamGroup(params: {
 }) {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("save_team_group", {
-    p_description: params.description ?? null,
-    p_group_id: params.groupId ?? null,
+    p_description: params.description ?? undefined,
+    p_group_id: params.groupId ?? "",
     p_member_ids: params.memberIds,
     p_name: params.name,
     p_organization_id: params.organizationId,

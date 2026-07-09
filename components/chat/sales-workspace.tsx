@@ -26,12 +26,14 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { getGlobalAISettings } from "@/lib/supabase/queries/ai-settings";
+import { createLead } from "@/lib/supabase/queries/leads";
 import {
   listSalesMessages,
   type SalesTicketView,
@@ -60,6 +62,10 @@ export function SalesWorkspace({
   const [mode] = useState<"auto" | "copilot">("copilot");
   const [message, setMessage] = useState("");
   const [isDetailsOpen, setDetailsOpen] = useState(false);
+  const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: messages = [] } = useQuery({
@@ -96,6 +102,31 @@ export function SalesWorkspace({
     },
   });
 
+  const addLeadMutation = useMutation({
+    mutationFn: () =>
+      createLead({
+        email: leadEmail,
+        name: leadName,
+        phone: leadPhone || undefined,
+        product_id: session.product?.id || null,
+        source: "manual",
+      }),
+    onError: () => {
+      toast.error("Não foi possível salvar o contato.");
+    },
+    onSuccess: async (result) => {
+      if (result?.success === false) {
+        toast.error(result.error || "Não foi possível salvar o contato.");
+        return;
+      }
+      toast.success("Contato salvo com sucesso para remarketing.");
+      setIsAddLeadOpen(false);
+      setLeadName("");
+      setLeadEmail("");
+      setLeadPhone("");
+    },
+  });
+
   useEffect(
     () =>
       subscribeSalesMessages(session.id, () => {
@@ -111,6 +142,14 @@ export function SalesWorkspace({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   });
+
+  function handleSaveLead() {
+    if (!leadName.trim() || !leadEmail.trim()) {
+      toast.error("Nome e e-mail são obrigatórios.");
+      return;
+    }
+    addLeadMutation.mutate();
+  }
 
   function handleSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -168,7 +207,10 @@ export function SalesWorkspace({
             />
           </TabsContent>
           <TabsContent className="m-0 focus-visible:ring-0" value="lead">
-            <LeadToolsTab session={session} />
+            <LeadToolsTab
+              onAddLeadClick={() => setIsAddLeadOpen(true)}
+              session={session}
+            />
           </TabsContent>
           <TabsContent className="m-0 focus-visible:ring-0" value="produto">
             <ProductToolsTab session={session} />
@@ -436,6 +478,100 @@ export function SalesWorkspace({
           </div>
         </SheetContent>
       </Sheet>
+
+      <Sheet
+        onOpenChange={(open) => {
+          if (!open) {
+            setLeadName("");
+            setLeadEmail("");
+            setLeadPhone("");
+          }
+          setIsAddLeadOpen(open);
+        }}
+        open={isAddLeadOpen}
+      >
+        <SheetContent className="grid w-screen max-w-none grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-md">
+          <SheetHeader className="border-white/10 border-b px-5 py-4">
+            <SheetTitle>Adicionar contato para remarketing</SheetTitle>
+            <SheetDescription>
+              Salve o contato do cliente para enviar mensagens de remarketing
+              depois.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="premium-scrollbar min-h-0 overflow-y-auto p-5">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label
+                  className="text-muted-foreground text-xs font-medium"
+                  htmlFor="add-lead-name"
+                >
+                  Nome *
+                </label>
+                <Input
+                  className="h-10 rounded-xl"
+                  id="add-lead-name"
+                  onChange={(e) => setLeadName(e.target.value)}
+                  placeholder="Nome do cliente"
+                  value={leadName}
+                />
+              </div>
+              <div className="space-y-2">
+                <label
+                  className="text-muted-foreground text-xs font-medium"
+                  htmlFor="add-lead-email"
+                >
+                  E-mail *
+                </label>
+                <Input
+                  className="h-10 rounded-xl"
+                  id="add-lead-email"
+                  onChange={(e) => setLeadEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  type="email"
+                  value={leadEmail}
+                />
+              </div>
+              <div className="space-y-2">
+                <label
+                  className="text-muted-foreground text-xs font-medium"
+                  htmlFor="add-lead-phone"
+                >
+                  Telefone
+                </label>
+                <Input
+                  className="h-10 rounded-xl"
+                  id="add-lead-phone"
+                  onChange={(e) => setLeadPhone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  value={leadPhone}
+                />
+              </div>
+            </div>
+          </div>
+          <SheetFooter className="flex-row justify-between border-white/10 border-t p-4">
+            <Button
+              onClick={() => {
+                setLeadName("");
+                setLeadEmail("");
+                setLeadPhone("");
+                setIsAddLeadOpen(false);
+              }}
+              type="button"
+              variant="outline"
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="rounded-xl"
+              disabled={addLeadMutation.isPending}
+              onClick={handleSaveLead}
+              type="button"
+            >
+              {addLeadMutation.isPending ? "Salvando..." : "Salvar contato"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -453,11 +589,29 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LeadToolsTab({ session }: { session: SalesTicketView }) {
+function LeadToolsTab({
+  onAddLeadClick,
+  session,
+}: {
+  onAddLeadClick: () => void;
+  session: SalesTicketView;
+}) {
   const source = session.lead?.source ?? session.source;
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button
+          className="gap-2 rounded-xl text-xs font-bold"
+          onClick={onAddLeadClick}
+          size="sm"
+          type="button"
+        >
+          <UserRound className="size-3.5" />
+          Adicionar contato
+        </Button>
+      </div>
+
       <div className="grid gap-1">
         <DetailRow label="Nome" value={session.lead?.name ?? "--"} />
         <DetailRow label="E-mail" value={session.lead?.email ?? "--"} />

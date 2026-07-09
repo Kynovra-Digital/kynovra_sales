@@ -3,11 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
+  CheckCircle2,
   ChevronsUpDown,
   Edit3,
   ExternalLink,
   ImageIcon,
   Plus,
+  RefreshCw,
   Search,
   SlidersHorizontal,
   Star,
@@ -22,7 +24,6 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { TeamGroupsPanel } from "@/components/modules/team-groups-panel";
-import { ManualEvaluationDialog } from "@/components/products/manual-evaluation-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MetricCard } from "@/components/shared/metric-card";
 import {
@@ -68,6 +69,11 @@ import {
   type KnowledgeBaseRow,
   listKnowledgeBases,
 } from "@/lib/supabase/queries/knowledge-bases";
+import {
+  confirmCheckoutSale,
+  deleteCheckoutEvent,
+  deleteLead,
+} from "@/lib/supabase/queries/leads";
 import { listModuleRecords } from "@/lib/supabase/queries/modules";
 import {
   archiveProduct,
@@ -151,6 +157,12 @@ const productFieldHelp: Record<string, string> = {
     "Informe quanto a operação ganha por venda. Exemplo: 25,00.",
   difficulty:
     "Indique a dificuldade de venda para orientar a operação: fácil, médio ou difícil.",
+  "discount-preview":
+    "Resumo automático do preço original, preço com desconto e porcentagem removida.",
+  "discount-type":
+    "Ative para informar o preço final com desconto no card público.",
+  "discount-value":
+    "Informe o preço com desconto. O sistema calcula a porcentagem retirada a partir do preço fixo.",
   image:
     "Use imagem quadrada 1:1, recomendada 1200x1200 px, JPG/PNG/WebP até 2 MB.",
   images:
@@ -180,6 +192,8 @@ const productFieldHelp: Record<string, string> = {
     "Resumo curto para listagens e cards. Exemplo: Projetor portátil para filmes e apresentações.",
   "show-price-publicly":
     "Ative se o preço pode aparecer antes do atendimento. Desative para revelar no chat.",
+  "store-highlight":
+    "Marque como destaque para colocar o produto na seção Produtos em destaque da loja.",
   status:
     "Define se o produto pode ser atendido. Ativo libera o link público; Pausa/Arquivado bloqueiam operação.",
   "stock-control-enabled":
@@ -332,7 +346,6 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const [origin, setOrigin] = useState("");
   const [selectedRow, setSelectedRow] = useState<ModuleRow | null>(null);
   const [isCreateOpen, setCreateOpen] = useState(false);
-  const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(
     null,
   );
@@ -382,9 +395,20 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     data: rows = [],
     isError,
     isLoading,
+    isFetching,
+    refetch,
   } = useQuery({
     queryFn: () => listModuleRecords(moduleKey),
     queryKey: queryKeys.modules.record(moduleKey),
+  });
+  const {
+    data: checkoutClicks = [],
+    isFetching: isFetchingCheckoutClicks,
+    refetch: refetchCheckoutClicks,
+  } = useQuery({
+    enabled: moduleKey === "leads",
+    queryFn: () => listModuleRecords("checkout-clicks"),
+    queryKey: queryKeys.checkoutEvents.clicks,
   });
   const normalizedRows = useMemo(
     () => rows.map((row) => normalizeRow(moduleKey, row)),
@@ -400,6 +424,17 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const summaryCards = useMemo(
     () => buildSummaryCards(moduleKey, normalizedRows),
     [moduleKey, normalizedRows],
+  );
+  const normalizedCheckoutClicks = useMemo(
+    () => checkoutClicks.map((row) => normalizeRow(moduleKey, row)),
+    [moduleKey, checkoutClicks],
+  );
+  const filteredCheckoutClicks = useMemo(
+    () =>
+      normalizedCheckoutClicks.filter((row) =>
+        row.name.toLowerCase().includes(query.toLowerCase().trim()),
+      ),
+    [normalizedCheckoutClicks, query],
   );
 
   useEffect(() => {
@@ -433,6 +468,9 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
             "sales-ai-enabled": true,
             "show-price-publicly": true,
             status: "active",
+            "discount-type": "none",
+            "discount-preview": "Sem desconto público configurado.",
+            "store-highlight": "false",
             "support-ai-enabled": true,
           }
         : moduleKey === "campaigns"
@@ -494,11 +532,13 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     );
     const product = configuration.product;
 
-    setFormState({
+    const productFormState = {
       category: product.category ?? "",
       "checkout-url": product.checkout_url ?? "",
       "commission-margin": product.commission_margin?.toString() ?? "",
       difficulty: product.difficulty ?? "",
+      "discount-type": product.discount_type ?? "none",
+      "discount-value": product.discount_value?.toString() ?? "",
       "existing-image-url": product.image_url ?? "",
       "existing-product-images": normalizeProductImageUrls(
         product.image_urls,
@@ -522,6 +562,7 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       "short-description": product.short_description ?? "",
       "show-price-publicly": product.show_price_publicly,
       status: product.status,
+      "store-highlight": product.is_featured ? "true" : "false",
       "stock-control-enabled": product.stock_control_enabled,
       "stock-minimum": product.stock_minimum.toString(),
       "stock-quantity": product.stock_quantity.toString(),
@@ -531,6 +572,11 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
         configuration.supportKnowledgeBaseIds.join(","),
       subcategory: product.subcategory ?? "",
       warranty: product.warranty ?? "",
+    } satisfies WizardFormState;
+
+    setFormState({
+      ...productFormState,
+      ...buildProductDiscountDerivedFields(productFormState),
     });
     setEditingProductId(productId);
     setCreateStep(0);
@@ -554,6 +600,9 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       id === "schedule-mode" &&
       value === "continuous"
         ? { "ends-at": "" }
+        : {}),
+      ...(moduleKey === "products"
+        ? buildProductDiscountDerivedFields({ ...current, [id]: value })
         : {}),
     }));
   }
@@ -628,6 +677,10 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
         return archiveCampaign(row.id);
       }
 
+      if (moduleKey === "leads") {
+        return deleteLead(row.id);
+      }
+
       throw new Error("Exclusão não configurada para este módulo.");
     },
     onError: (error) => {
@@ -642,9 +695,122 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       setSelectedRow(null);
     },
   });
+  const productHighlightMutation = useMutation({
+    mutationFn: async (input: { isFeatured: boolean; productId: string }) =>
+      updateProduct(input.productId, { is_featured: input.isFeatured }),
+    onError: (error) => {
+      const message = resolveMutationErrorMessage(error);
+      toast.error(
+        message
+          ? `Não foi possível atualizar o destaque do produto: ${message}`
+          : "Não foi possível atualizar o destaque do produto. Verifique se a migration de destaque foi aplicada.",
+      );
+    },
+    onSuccess: async (product) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.modules.record(moduleKey),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.list }),
+      ]);
+      setSelectedRow((current) =>
+        current?.id === product.id
+          ? {
+              ...current,
+              Destaque: product.is_featured
+                ? "Produto em destaque"
+                : "Não destaque",
+            }
+          : current,
+      );
+      toast.success(
+        product.is_featured
+          ? "Produto marcado como destaque."
+          : "Produto removido dos destaques.",
+      );
+    },
+  });
+  const confirmCheckoutSaleMutation = useMutation({
+    mutationFn: async (eventId: string) => confirmCheckoutSale(eventId),
+    onError: (error) => {
+      const message = resolveMutationErrorMessage(error);
+      toast.error(
+        message
+          ? `Não foi possível confirmar a venda: ${message}`
+          : "Não foi possível confirmar a venda.",
+      );
+    },
+    onSuccess: async (response) => {
+      if (!response?.success) {
+        toast.error(
+          response?.error
+            ? `Não foi possível confirmar a venda: ${response.error}`
+            : "Não foi possível confirmar a venda.",
+        );
+        return;
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.checkoutEvents.clicks,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.modules.record("products"),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.overview("today"),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.overview("7d"),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.overview("30d"),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.overview("month"),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.list }),
+      ]);
+      toast.success("Venda confirmada e registro removido da lista.");
+    },
+  });
+  const deleteCheckoutEventMutation = useMutation({
+    mutationFn: async (eventId: string) => deleteCheckoutEvent(eventId),
+    onError: (error) => {
+      const message = resolveMutationErrorMessage(error);
+      toast.error(
+        message
+          ? `Não foi possível excluir o registro: ${message}`
+          : "Não foi possível excluir o registro.",
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.checkoutEvents.clicks,
+      });
+      toast.success("Registro excluído.");
+      setSelectedRow(null);
+    },
+  });
   const createDisabled = createBaseDisabled || createMutation.isPending;
 
   function renderCrudActions(row: ModuleRow) {
+    if (moduleKey === "leads") {
+      return (
+        <Button
+          className="gap-1"
+          disabled={archiveMutation.isPending}
+          onClick={() => archiveMutation.mutate(row)}
+          size="sm"
+          type="button"
+          variant="destructive"
+        >
+          <Trash2 className="size-3.5" />
+          Excluir
+        </Button>
+      );
+    }
+
     if (!["campaigns", "products"].includes(moduleKey)) return null;
 
     return (
@@ -678,35 +844,91 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
     );
   }
 
+  function renderCheckoutClickActions(row: ModuleRow) {
+    return (
+      <>
+        <Button
+          className="gap-1"
+          disabled={confirmCheckoutSaleMutation.isPending}
+          onClick={() => confirmCheckoutSaleMutation.mutate(row.id)}
+          size="sm"
+          type="button"
+        >
+          <CheckCircle2 className="size-3.5" />
+          Compra realizada
+        </Button>
+        <Button
+          className="gap-1"
+          disabled={deleteCheckoutEventMutation.isPending}
+          onClick={() => deleteCheckoutEventMutation.mutate(row.id)}
+          size="sm"
+          type="button"
+          variant="destructive"
+        >
+          <Trash2 className="size-3.5" />
+          Excluir
+        </Button>
+      </>
+    );
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         actions={
           <div className="flex flex-wrap gap-2">
+            {moduleKey !== "leads" && (
+              <Button
+                className="gap-2"
+                disabled={createDisabled}
+                onClick={() => {
+                  if (!canCreateRecords) {
+                    toast.info(
+                      "Este módulo ainda depende de uma mutation Supabase dedicada.",
+                    );
+                    return;
+                  }
+
+                  if (!isOrganizationReady) {
+                    toast.error(
+                      "Aguarde o carregamento da organização antes de criar registros.",
+                    );
+                    return;
+                  }
+
+                  openCreateDrawer();
+                }}
+                size="sm"
+              >
+                <Plus data-icon="inline-start" />
+                {config.createLabel}
+              </Button>
+            )}
             <Button
               className="gap-2"
-              disabled={createDisabled}
+              disabled={isFetching || isFetchingCheckoutClicks}
               onClick={() => {
-                if (!canCreateRecords) {
-                  toast.info(
-                    "Este módulo ainda depende de uma mutation Supabase dedicada.",
-                  );
-                  return;
+                queryClient.removeQueries({
+                  queryKey: queryKeys.modules.record(moduleKey),
+                });
+                refetch();
+                if (moduleKey === "leads") {
+                  queryClient.removeQueries({
+                    queryKey: queryKeys.checkoutEvents.clicks,
+                  });
+                  refetchCheckoutClicks();
                 }
-
-                if (!isOrganizationReady) {
-                  toast.error(
-                    "Aguarde o carregamento da organização antes de criar registros.",
-                  );
-                  return;
-                }
-
-                openCreateDrawer();
               }}
               size="sm"
+              variant="outline"
             >
-              <Plus data-icon="inline-start" />
-              {config.createLabel}
+              <RefreshCw
+                className={
+                  isFetching || isFetchingCheckoutClicks ? "animate-spin" : ""
+                }
+                data-icon="inline-start"
+              />
+              Atualizar
             </Button>
             <Button className="gap-2" size="sm" variant="outline">
               <SlidersHorizontal data-icon="inline-start" />
@@ -761,6 +983,59 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
               canManageTeam={canManageTeam}
               organizationId={organizationId}
             />
+          </TabsContent>
+        </Tabs>
+      ) : moduleKey === "leads" ? (
+        <Tabs className="min-w-0" defaultValue="remarketing">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="remarketing">
+              Leads para remarketing
+            </TabsTrigger>
+            <TabsTrigger value="checkout-clicks">
+              Registros de checkout
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent className="mt-3" value="remarketing">
+            <div className="data-panel overflow-hidden">
+              <RecordsPanelContent
+                config={config}
+                createBaseDisabled={createBaseDisabled}
+                createDisabled={createDisabled}
+                filteredRows={filteredRows}
+                isError={isError}
+                isLoading={isLoading}
+                isOrganizationReady={isOrganizationReady}
+                moduleKey={moduleKey}
+                onOpenCreate={openCreateDrawer}
+                onOpenRow={setSelectedRow}
+                query={query}
+                renderCrudActions={renderCrudActions}
+                setQuery={setQuery}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent className="mt-3" value="checkout-clicks">
+            <div className="data-panel overflow-hidden">
+              <RecordsPanelContent
+                config={{
+                  ...config,
+                  columns: ["Produto", "Evento", "Preço", "Criado em"],
+                  createLabel: "Novo registro",
+                }}
+                createBaseDisabled={createBaseDisabled}
+                createDisabled={createDisabled}
+                filteredRows={filteredCheckoutClicks}
+                isError={isError}
+                isLoading={isLoading}
+                isOrganizationReady={isOrganizationReady}
+                moduleKey={moduleKey}
+                onOpenCreate={openCreateDrawer}
+                onOpenRow={setSelectedRow}
+                query={query}
+                renderCrudActions={renderCheckoutClickActions}
+                setQuery={setQuery}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       ) : (
@@ -824,14 +1099,6 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button
-                      onClick={() => void openProductEditor(selectedRow.id)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Edit3 className="size-3.5" />
-                      Editar produto e IA
-                    </Button>
-                    <Button
                       disabled={archiveMutation.isPending}
                       onClick={() => archiveMutation.mutate(selectedRow)}
                       size="sm"
@@ -866,14 +1133,35 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
                         Abrir
                       </Link>
                     </Button>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-xl border border-kynovra-tech-purple/25 bg-kynovra-tech-purple/10 p-4">
+                  <p className="font-medium text-sm">Destaque da loja</p>
+                  <p className="mt-2 text-muted-foreground text-xs">
+                    Controle se este produto aparece na seção Produtos em
+                    destaque da loja pública.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs">
+                      {String(selectedRow.Destaque ?? "Não destaque")}
+                    </span>
                     <Button
-                      onClick={() => setIsEvaluationOpen(true)}
+                      disabled={productHighlightMutation.isPending}
+                      onClick={() =>
+                        productHighlightMutation.mutate({
+                          isFeatured:
+                            selectedRow.Destaque !== "Produto em destaque",
+                          productId: selectedRow.id,
+                        })
+                      }
                       size="sm"
+                      type="button"
                       variant="outline"
-                      className="gap-2"
                     >
                       <Star className="size-3.5" />
-                      Avaliar Produto
+                      {selectedRow.Destaque === "Produto em destaque"
+                        ? "Remover destaque"
+                        : "Produto em destaque"}
                     </Button>
                   </div>
                 </div>
@@ -1019,14 +1307,6 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
           </SheetFooter>
         </SheetContent>
       </Sheet>
-
-      {moduleKey === "products" && selectedRow?.id && (
-        <ManualEvaluationDialog
-          open={isEvaluationOpen}
-          onOpenChange={setIsEvaluationOpen}
-          productId={selectedRow.id}
-        />
-      )}
     </div>
   );
 }
@@ -1134,9 +1414,11 @@ function RecordsPanelContent({
         <div className="p-4">
           <EmptyState
             action={
-              <Button disabled={createDisabled} onClick={handleCreateClick}>
-                {config.createLabel}
-              </Button>
+              canCreateRecords ? (
+                <Button disabled={createDisabled} onClick={handleCreateClick}>
+                  {config.createLabel}
+                </Button>
+              ) : null
             }
             description={config.emptyText}
             title={config.emptyTitle}
@@ -1560,9 +1842,8 @@ function ProductGalleryInput({
         sourceIndex: -1,
       })),
   ].slice(0, maxFiles);
-  const selectedImage = allImages[0] ?? null;
-  const thumbnails = Array.from({ length: maxFiles - 1 }, (_, index) => ({
-    image: allImages[index + 1],
+  const thumbnails = Array.from({ length: maxFiles }, (_, index) => ({
+    image: allImages[index] ?? null,
     slot: index,
   }));
 
@@ -1635,42 +1916,19 @@ function ProductGalleryInput({
       />
 
       <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
-        <div className="relative mx-auto aspect-square max-h-[320px] w-full max-w-[360px]">
-          <label
-            className="relative flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-black/20 transition hover:border-blue-400/50"
-            htmlFor={field.id}
-          >
-            {selectedImage ? (
-              <ProductGalleryImage image={selectedImage} priority />
-            ) : (
-              <div className="flex flex-col items-center gap-3 text-slate-500">
-                <Plus className="size-12 stroke-[1.4]" />
-                <span className="font-medium text-xs">Imagem principal</span>
-              </div>
-            )}
-          </label>
-          {selectedImage ? (
-            <button
-              aria-label="Remover imagem principal"
-              className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-black/75 text-white transition hover:bg-red-500"
-              onClick={() => removeGalleryImage(selectedImage)}
-              type="button"
-            >
-              <X className="size-4" />
-            </button>
-          ) : null}
-        </div>
-
-        <div className="mx-auto mt-3 grid max-w-[360px] grid-cols-4 gap-2.5">
+        <div className="mx-auto grid max-w-[360px] grid-cols-4 gap-2.5">
           {thumbnails.map((thumbnail) =>
             thumbnail.image ? (
               <div
                 className="relative aspect-square overflow-hidden rounded-md border border-white/15 bg-black/20"
                 key={thumbnail.image.id}
               >
-                <ProductGalleryImage image={thumbnail.image} />
+                <ProductGalleryImage
+                  image={thumbnail.image}
+                  priority={thumbnail.slot === 0}
+                />
                 <button
-                  aria-label={`Remover imagem ${thumbnail.slot + 2}`}
+                  aria-label={`Remover imagem ${thumbnail.slot + 1}`}
                   className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
                   onClick={() => removeGalleryImage(thumbnail.image)}
                   type="button"
@@ -1889,8 +2147,14 @@ async function createModuleRecord(
       checkout_url: nullableString(formState["checkout-url"]),
       commission_margin: nullableNumber(formState["commission-margin"]),
       difficulty: nullableString(formState.difficulty),
+      discount_type: stringValue(formState["discount-type"]) || "none",
+      discount_value:
+        stringValue(formState["discount-type"]) === "none"
+          ? null
+          : nullableNumber(formState["discount-value"]),
       image_url: productImageUrls[0] ?? null,
       image_urls: productImageUrls,
+      is_featured: stringValue(formState["store-highlight"]) === "true",
       main_benefit: nullableString(formState["public-benefits"]),
       name,
       organization_id: organizationId,
@@ -2116,6 +2380,46 @@ function nullableInteger(value: WizardFormState[string]) {
   return parsed === null ? null : Math.trunc(parsed);
 }
 
+function resolveMutationErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const possibleMessage = "message" in error ? error.message : null;
+    if (typeof possibleMessage === "string" && possibleMessage.trim()) {
+      return possibleMessage;
+    }
+  }
+
+  return "";
+}
+
+function buildProductDiscountDerivedFields(formState: WizardFormState) {
+  const price = nullableNumber(formState.price);
+  const discountType = stringValue(formState["discount-type"]);
+  const discountValue = nullableNumber(formState["discount-value"]);
+
+  if (!price || discountType !== "final_price" || !discountValue) {
+    return { "discount-preview": "Sem desconto público configurado." };
+  }
+
+  const finalPrice = Math.min(Math.max(discountValue, 0), price);
+  const discountAmount = price - finalPrice;
+  const percentOff = price > 0 ? (discountAmount / price) * 100 : 0;
+
+  return {
+    "discount-preview": `Preço total: ${formatCurrency(price)} · Com desconto: ${formatCurrency(finalPrice)} · Retirado: ${percentOff.toFixed(0)}%`,
+  };
+}
+
+function formatCurrency(value: number) {
+  return value.toLocaleString("pt-BR", {
+    currency: "BRL",
+    style: "currency",
+  });
+}
+
 function nullableDate(value: WizardFormState[string]) {
   const normalized = stringValue(value);
   return normalized ? new Date(`${normalized}T00:00:00`).toISOString() : null;
@@ -2191,6 +2495,7 @@ function normalizeRow(
       "Criado em": createdAt,
       "Link de atendimento": row.slug,
       Nome: row.name,
+      Destaque: row.is_featured ? "Produto em destaque" : "Não destaque",
       Preço:
         typeof row.price === "number"
           ? row.price.toLocaleString("pt-BR", {
@@ -2221,6 +2526,27 @@ function normalizeRow(
       id: String(row.id),
       name: String(row.name ?? "Campanha"),
       status: String(row.status ?? "Rascunho"),
+    };
+  }
+
+  if (row.event_type && row.product) {
+    const product = row.product as Record<string, unknown> | null;
+    const productName = product?.name ?? "Produto";
+    const productPrice =
+      typeof product?.price === "number"
+        ? product.price.toLocaleString("pt-BR", {
+            currency: "BRL",
+            style: "currency",
+          })
+        : "--";
+    return {
+      "Criado em": createdAt,
+      Evento: row.event_type,
+      Preço: productPrice,
+      Produto: productName,
+      id: String(row.id),
+      name: String(productName),
+      status: String(row.event_type ?? "checkout"),
     };
   }
 
@@ -2373,6 +2699,16 @@ const productDifficulties = [
   { label: "Difícil", value: "dificil" },
 ];
 
+const productDiscountTypes = [
+  { label: "Sem desconto", value: "none" },
+  { label: "Ativar desconto", value: "final_price" },
+];
+
+const productHighlightOptions = [
+  { label: "Não destacar", value: "false" },
+  { label: "Destacar na loja", value: "true" },
+];
+
 const teamRoleOptions = [
   { label: "Owner / Fundador", value: "owner" },
   { label: "Superadmin", value: "superadmin" },
@@ -2468,10 +2804,10 @@ function getWizardSteps(
           { id: "name", label: "Nome", required: true },
           {
             helperText:
-              "Envie até 5 imagens quadradas 1:1 para a galeria do produto. A primeira imagem será usada como capa nos cards públicos.",
+              "Envie até 4 imagens quadradas 1:1 para a galeria do produto. A primeira imagem será usada como capa nos cards públicos.",
             id: "images",
             label: "Imagens do produto",
-            maxFiles: 5,
+            maxFiles: 4,
             type: "multi-image",
           },
           {
@@ -2498,6 +2834,30 @@ function getWizardSteps(
       {
         fields: [
           { id: "price", label: "Preço fixo", type: "number" },
+          {
+            id: "discount-type",
+            label: "Desconto",
+            options: productDiscountTypes,
+            selection: "single",
+          },
+          {
+            hiddenWhen: (formState) => formState["discount-type"] === "none",
+            id: "discount-value",
+            label: "Preço com desconto",
+            type: "number",
+          },
+          {
+            id: "discount-preview",
+            label: "Resumo do desconto",
+            readOnly: true,
+            type: "textarea",
+          },
+          {
+            id: "store-highlight",
+            label: "Destaque",
+            options: productHighlightOptions,
+            selection: "single",
+          },
           { id: "checkout-url", label: "Link de checkout" },
           {
             id: "commission-margin",

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Bell,
+  BellDot,
   ChevronDown,
   CreditCard,
   Globe,
@@ -41,6 +42,7 @@ import {
   type PublicStorefrontCategory,
   type PublicStorefrontProduct,
 } from "@/lib/supabase/queries/public";
+import { listNotifications } from "@/lib/supabase/queries/notifications";
 import { queryKeys } from "@/lib/supabase/query-keys";
 
 const STORE_ALL_CATEGORIES_FILTER = "__all_categories__";
@@ -79,6 +81,13 @@ export default function StorefrontPage() {
       null,
     [categories, selectedSubcategorySlug],
   );
+  const selectedPrimaryCategory = useMemo(
+    () =>
+      categories.find(
+        (category) => category.slug === selectedSubcategorySlug,
+      ) ?? null,
+    [categories, selectedSubcategorySlug],
+  );
   const isAllCategoriesSelected =
     selectedSubcategorySlug === STORE_ALL_CATEGORIES_FILTER;
   const filteredProductsBySubcategory = useMemo(() => {
@@ -92,6 +101,17 @@ export default function StorefrontPage() {
         ),
     );
   }, [selectedSubcategory, visibleCampaigns]);
+  const filteredProductsByPrimaryCategory = useMemo(() => {
+    if (!selectedPrimaryCategory) return [];
+
+    return dedupeProductsBySlug(
+      visibleCampaigns
+        .flatMap((campaign) => campaign.products)
+        .filter((product) =>
+          isProductInPrimaryCategory(product, selectedPrimaryCategory),
+        ),
+    );
+  }, [selectedPrimaryCategory, visibleCampaigns]);
   const visibleProducts = useMemo(
     () =>
       dedupeProductsBySlug(
@@ -109,9 +129,22 @@ export default function StorefrontPage() {
   const heroCampaigns = campaignsWithBanners.length
     ? campaignsWithBanners
     : campaigns;
-  const spotlightProducts = visibleCampaigns
-    .flatMap((campaign) => campaign.products)
-    .slice(0, 6);
+  const spotlightProducts = useMemo(
+    () => buildSpotlightProducts(visibleProducts),
+    [visibleProducts],
+  );
+  const topSellerSlugs = useMemo(
+    () => buildTopSellerSlugs(visibleProducts),
+    [visibleProducts],
+  );
+  const { data: notifications = [] } = useQuery({
+    enabled: Boolean(currentUser),
+    queryFn: listNotifications,
+    queryKey: queryKeys.notifications.list,
+  });
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read_at,
+  ).length;
   const hasSearch = normalizedSearch.length > 0;
 
   useEffect(() => {
@@ -170,7 +203,11 @@ export default function StorefrontPage() {
                 className="hidden size-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white sm:flex"
                 type="button"
               >
-                <Bell className="size-4" />
+                {unreadCount > 0 ? (
+                  <BellDot className="size-5" />
+                ) : (
+                  <Bell className="size-5" />
+                )}
               </button>
             ) : null}
             {currentUser ? (
@@ -195,7 +232,9 @@ export default function StorefrontPage() {
         />
       </header>
 
-      {selectedSubcategory || isAllCategoriesSelected ? null : (
+      {selectedSubcategory ||
+      selectedPrimaryCategory ||
+      isAllCategoriesSelected ? null : (
         <Hero campaigns={heroCampaigns} />
       )}
 
@@ -227,10 +266,13 @@ export default function StorefrontPage() {
           ) : null}
         </section>
 
-        {selectedSubcategory || isAllCategoriesSelected ? (
+        {selectedSubcategory ||
+        selectedPrimaryCategory ||
+        isAllCategoriesSelected ? (
           <SubcategoryShowcase
             categories={categories}
             onClear={() => setSelectedSubcategorySlug(null)}
+            onSelectCategory={setSelectedSubcategorySlug}
             onSelectAll={() =>
               setSelectedSubcategorySlug(STORE_ALL_CATEGORIES_FILTER)
             }
@@ -238,34 +280,46 @@ export default function StorefrontPage() {
             products={
               isAllCategoriesSelected
                 ? visibleProducts
-                : filteredProductsBySubcategory
+                : selectedPrimaryCategory
+                  ? filteredProductsByPrimaryCategory
+                  : filteredProductsBySubcategory
             }
             productCounts={subcategoryProductCounts}
             title={
               isAllCategoriesSelected
                 ? "Todas as categorias"
-                : (selectedSubcategory?.name ?? "")
+                : selectedPrimaryCategory
+                  ? selectedPrimaryCategory.name
+                  : (selectedSubcategory?.name ?? "")
             }
             description={
               isAllCategoriesSelected
                 ? "Todos os produtos ativos disponíveis na loja."
-                : "Produtos filtrados pela subcategoria selecionada na loja."
+                : selectedPrimaryCategory
+                  ? "Produtos filtrados por todas as subcategorias desta categoria."
+                  : "Produtos filtrados pela subcategoria selecionada na loja."
             }
             parentName={selectedSubcategory?.parentName ?? null}
             selectedSubcategorySlug={selectedSubcategory?.slug ?? null}
+            topSellerSlugs={topSellerSlugs}
           />
         ) : null}
 
         {!selectedSubcategory &&
+        !selectedPrimaryCategory &&
         !isAllCategoriesSelected &&
         spotlightProducts.length ? (
           <section className="py-7" id="ofertas">
             <SectionTitle eyebrow="Best offers" title="Produtos em destaque" />
-            <ProductGrid products={spotlightProducts} />
+            <ProductGrid
+              products={spotlightProducts}
+              topSellerSlugs={topSellerSlugs}
+            />
           </section>
         ) : null}
 
         {!selectedSubcategory &&
+          !selectedPrimaryCategory &&
           !isAllCategoriesSelected &&
           visibleCampaigns.map((campaign) => (
             <CampaignShowcase campaign={campaign} key={campaign.id} />
@@ -482,6 +536,34 @@ function isProductInSubcategory(
     );
 }
 
+function isProductInPrimaryCategory(
+  product: PublicStorefrontProduct,
+  category: PublicStorefrontCategory,
+) {
+  const subcategorySlugs = category.subcategories.map(
+    (subcategory) => subcategory.slug,
+  );
+  const normalizedCategoryValues = [category.slug, category.name].map((value) =>
+    normalizeSearch(value),
+  );
+  const normalizedProductValues = [product.subcategory, product.category].map(
+    (value) => normalizeSearch(value ?? ""),
+  );
+
+  return (
+    subcategorySlugs.some((subcategorySlug) =>
+      isProductInSubcategory(product, subcategorySlug),
+    ) ||
+    normalizedProductValues.some((productValue) =>
+      normalizedCategoryValues.some(
+        (categoryValue) =>
+          productValue === categoryValue ||
+          productValue.includes(categoryValue),
+      ),
+    )
+  );
+}
+
 function dedupeProductsBySlug(products: PublicStorefrontProduct[]) {
   const productsBySlug = new Map<string, PublicStorefrontProduct>();
 
@@ -490,6 +572,52 @@ function dedupeProductsBySlug(products: PublicStorefrontProduct[]) {
   }
 
   return Array.from(productsBySlug.values());
+}
+
+function buildSpotlightProducts(products: PublicStorefrontProduct[]) {
+  const featuredProducts = products.filter((product) => product.is_featured);
+  const bestSellersBySubcategory = new Map<string, PublicStorefrontProduct>();
+
+  for (const product of products) {
+    const subcategory = normalizeSearch(product.subcategory ?? "");
+    if (!subcategory) continue;
+
+    const current = bestSellersBySubcategory.get(subcategory);
+    if ((product.sales_count ?? 0) > (current?.sales_count ?? 0)) {
+      bestSellersBySubcategory.set(subcategory, product);
+    }
+  }
+
+  return dedupeProductsBySlug([
+    ...featuredProducts,
+    ...Array.from(bestSellersBySubcategory.values()),
+  ])
+    .sort(
+      (first, second) =>
+        Number(second.is_featured) - Number(first.is_featured) ||
+        (second.sales_count ?? 0) - (first.sales_count ?? 0),
+    )
+    .slice(0, 10);
+}
+
+function buildTopSellerSlugs(products: PublicStorefrontProduct[]): Set<string> {
+  const bestSellersBySubcategory = new Map<string, PublicStorefrontProduct>();
+
+  for (const product of products) {
+    const subcategory = normalizeSearch(product.subcategory ?? "");
+    if (!subcategory) continue;
+
+    const current = bestSellersBySubcategory.get(subcategory);
+    if ((product.sales_count ?? 0) > (current?.sales_count ?? 0)) {
+      bestSellersBySubcategory.set(subcategory, product);
+    }
+  }
+
+  return new Set(
+    Array.from(bestSellersBySubcategory.values()).map(
+      (product) => product.slug,
+    ),
+  );
 }
 
 function buildSubcategoryProductCounts(
@@ -646,11 +774,21 @@ function PromoBanner({ campaign }: { campaign: PublicStorefrontCampaign }) {
   );
 }
 
-function ProductGrid({ products }: { products: PublicStorefrontProduct[] }) {
+function ProductGrid({
+  products,
+  topSellerSlugs,
+}: {
+  products: PublicStorefrontProduct[];
+  topSellerSlugs?: Set<string>;
+}) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard
+          key={product.id}
+          product={product}
+          topSellerSlugs={topSellerSlugs}
+        />
       ))}
     </div>
   );
@@ -660,6 +798,7 @@ function SubcategoryShowcase({
   categories,
   description,
   onClear,
+  onSelectCategory,
   onSelectAll,
   onSelectSubcategory,
   parentName,
@@ -667,10 +806,12 @@ function SubcategoryShowcase({
   productCounts,
   selectedSubcategorySlug,
   title,
+  topSellerSlugs,
 }: {
   categories: PublicStorefrontCategory[];
   description: string;
   onClear: () => void;
+  onSelectCategory: (slug: string) => void;
   onSelectAll: () => void;
   onSelectSubcategory: (slug: string) => void;
   parentName: string | null;
@@ -678,6 +819,7 @@ function SubcategoryShowcase({
   productCounts: Map<string, number>;
   selectedSubcategorySlug: string | null;
   title: string;
+  topSellerSlugs: Set<string>;
 }) {
   return (
     <section className="py-7" id="ofertas">
@@ -720,6 +862,7 @@ function SubcategoryShowcase({
           <StoreCategorySidebar
             categories={categories}
             onSelectAll={onSelectAll}
+            onSelectCategory={onSelectCategory}
             onSelectSubcategory={onSelectSubcategory}
             productCounts={productCounts}
             selectedSubcategorySlug={selectedSubcategorySlug}
@@ -741,7 +884,10 @@ function SubcategoryShowcase({
                   </span>
                 ) : null}
               </div>
-              <ProductGrid products={products} />
+              <ProductGrid
+                products={products}
+                topSellerSlugs={topSellerSlugs}
+              />
             </>
           ) : (
             <StorefrontState text="Nenhum produto ativo encontrado." />
@@ -755,20 +901,24 @@ function SubcategoryShowcase({
 function StoreCategorySidebar({
   categories,
   onSelectAll,
+  onSelectCategory,
   onSelectSubcategory,
   productCounts,
   selectedSubcategorySlug,
 }: {
   categories: PublicStorefrontCategory[];
   onSelectAll: () => void;
+  onSelectCategory: (slug: string) => void;
   onSelectSubcategory: (slug: string) => void;
   productCounts: Map<string, number>;
   selectedSubcategorySlug: string | null;
 }) {
-  const selectedParentSlug = categories.find((category) =>
-    category.subcategories.some(
-      (subcategory) => subcategory.slug === selectedSubcategorySlug,
-    ),
+  const selectedParentSlug = categories.find(
+    (category) =>
+      category.slug === selectedSubcategorySlug ||
+      category.subcategories.some(
+        (subcategory) => subcategory.slug === selectedSubcategorySlug,
+      ),
   )?.slug;
   const [openCategorySlug, setOpenCategorySlug] = useState(
     selectedParentSlug ?? categories[0]?.slug ?? "",
@@ -799,11 +949,12 @@ function StoreCategorySidebar({
           >
             <button
               className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left font-semibold text-[12px] text-slate-200 transition hover:bg-white/[0.03] hover:text-white"
-              onClick={() =>
+              onClick={() => {
+                onSelectCategory(category.slug);
                 setOpenCategorySlug((currentSlug) =>
                   currentSlug === category.slug ? "" : category.slug,
-                )
-              }
+                );
+              }}
               type="button"
             >
               <span className="min-w-0 truncate">{category.name}</span>
@@ -1042,6 +1193,7 @@ function StoreCategoryTopbar({
   onSelectSubcategory: (slug: string | null) => void;
   selectedSubcategorySlug: string | null;
 }) {
+  const [openCategorySlug, setOpenCategorySlug] = useState<string | null>(null);
   const categoriesBySlug = new Map(
     categories.map((category) => [category.slug, category]),
   );
@@ -1063,20 +1215,45 @@ function StoreCategoryTopbar({
         {storefrontPrimaryCategories.map((category) => {
           const subcategories =
             categoriesBySlug.get(category.slug)?.subcategories ?? [];
+          const isCategorySelected =
+            selectedSubcategorySlug === category.slug ||
+            subcategories.some(
+              (subcategory) => subcategory.slug === selectedSubcategorySlug,
+            );
 
           return (
-            <div
-              className="group relative flex h-9 shrink-0 items-center"
+            <fieldset
+              className="relative flex h-9 shrink-0 items-center border-0 p-0"
               key={category.slug}
+              onMouseEnter={() => setOpenCategorySlug(category.slug)}
+              onMouseLeave={() => setOpenCategorySlug(null)}
             >
-              <a
-                className="flex h-9 items-center gap-1.5 border-transparent border-b-2 px-3 font-black text-[11px] text-slate-300 uppercase tracking-[0.08em] transition hover:border-fuchsia-500/70 hover:text-white focus-visible:border-fuchsia-500/70 focus-visible:text-white focus-visible:outline-none"
-                href="#ofertas"
+              <legend className="sr-only">{category.name}</legend>
+              <button
+                className={`flex h-9 items-center gap-1.5 border-b-2 px-3 font-black text-[11px] uppercase tracking-[0.08em] transition focus-visible:border-fuchsia-500/70 focus-visible:text-white focus-visible:outline-none ${
+                  isCategorySelected
+                    ? "border-fuchsia-500/70 text-white"
+                    : "border-transparent text-slate-300 hover:border-fuchsia-500/70 hover:text-white"
+                }`}
+                onClick={() => {
+                  onSelectSubcategory(category.slug);
+                  setOpenCategorySlug(null);
+                }}
+                onFocus={() => setOpenCategorySlug(category.slug)}
+                type="button"
               >
                 {category.name}
-                <ChevronDown className="size-3 transition group-hover:rotate-180 group-focus-within:rotate-180" />
-              </a>
-              <div className="invisible absolute top-full left-0 z-[90] min-w-56 translate-y-2 opacity-0 transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                <ChevronDown
+                  className={`size-3 transition ${openCategorySlug === category.slug ? "rotate-180" : ""}`}
+                />
+              </button>
+              <div
+                className={`absolute top-full left-0 z-[90] min-w-56 transition duration-150 ${
+                  openCategorySlug === category.slug
+                    ? "visible translate-y-0 opacity-100"
+                    : "invisible translate-y-2 opacity-0"
+                }`}
+              >
                 <div className="mt-1 rounded-2xl border border-fuchsia-400/20 bg-[#09090d]/98 p-2 shadow-[0_18px_60px_rgba(0,0,0,0.45),0_0_28px_rgba(168,85,247,0.18)] backdrop-blur-xl">
                   {subcategories.length ? (
                     <div className="grid gap-1">
@@ -1088,7 +1265,10 @@ function StoreCategoryTopbar({
                               : "text-slate-300 hover:bg-white/10 hover:text-white focus-visible:bg-white/10 focus-visible:text-white"
                           }`}
                           key={subcategory.slug}
-                          onClick={() => onSelectSubcategory(subcategory.slug)}
+                          onClick={() => {
+                            onSelectSubcategory(subcategory.slug);
+                            setOpenCategorySlug(null);
+                          }}
                           type="button"
                         >
                           {subcategory.name}
@@ -1102,7 +1282,7 @@ function StoreCategoryTopbar({
                   )}
                 </div>
               </div>
-            </div>
+            </fieldset>
           );
         })}
       </div>
@@ -1123,25 +1303,32 @@ function HomeIcon() {
   );
 }
 
-function ProductCard({ product }: { product: PublicStorefrontProduct }) {
-  const price =
-    product.show_price_publicly && typeof product.price === "number"
-      ? product.price.toLocaleString("pt-BR", {
-          currency: "BRL",
-          style: "currency",
-        })
-      : "No atendimento";
-  const oldPrice =
-    product.show_price_publicly && typeof product.price === "number"
-      ? (product.price * 1.72).toLocaleString("pt-BR", {
-          currency: "BRL",
-          style: "currency",
-        })
-      : null;
+function ProductCard({
+  product,
+  topSellerSlugs,
+}: {
+  product: PublicStorefrontProduct;
+  topSellerSlugs?: Set<string>;
+}) {
+  const priceInfo = getStorefrontPriceInfo(product);
   const shortTitle = product.name;
+  const isTopSeller = topSellerSlugs?.has(product.slug) ?? false;
+  const isFeatured = Boolean(product.is_featured);
+  const isGoldSpotlight = isTopSeller && isFeatured;
+  const tagline = isTopSeller
+    ? "Top selling"
+    : isFeatured
+      ? "Produto em destaque"
+      : null;
 
   return (
-    <article className="group bg-[#080808] pb-3">
+    <article
+      className={`group bg-[#080808] pb-3 ${
+        isGoldSpotlight
+          ? "border-2 border-amber-400 shadow-[0_0_18px_-4px_rgba(251,191,36,0.55)]"
+          : ""
+      }`}
+    >
       <Link href={`/p/${product.slug}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-[#f4f0ea]">
           {product.image_url ? (
@@ -1153,29 +1340,41 @@ function ProductCard({ product }: { product: PublicStorefrontProduct }) {
               src={product.image_url}
             />
           ) : null}
+          {tagline ? (
+            <span
+              className={`absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                isGoldSpotlight
+                  ? "bg-amber-400 text-black"
+                  : isTopSeller
+                    ? "bg-red-500 text-white"
+                    : "bg-blue-500 text-white"
+              }`}
+            >
+              {tagline}
+            </span>
+          ) : null}
         </div>
         <div className="px-1 pt-2">
           <h3 className="line-clamp-1 font-semibold text-[13px] leading-tight text-white group-hover:text-red-200">
-            <span className="mr-1 rounded-[2px] bg-[#ffe100] px-1 py-0.5 font-black text-[9px] text-black uppercase">
-              Choice
-            </span>
             {shortTitle}
           </h3>
           <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span className="font-black text-[22px] leading-none text-white">
-              {price}
+              {priceInfo.current}
             </span>
-            {oldPrice ? (
+            {priceInfo.original ? (
               <span className="text-slate-500 text-xs line-through">
-                {oldPrice}
+                {priceInfo.original}
               </span>
             ) : null}
-            {oldPrice ? (
-              <span className="font-bold text-red-500 text-xs">-42%</span>
+            {priceInfo.percentOff ? (
+              <span className="font-bold text-red-500 text-xs">
+                -{priceInfo.percentOff}%
+              </span>
             ) : null}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-300">
-            <span className="flex items-center gap-0.5 text-white">
+            <span className="flex items-center gap-0.5 text-amber-400">
               {Array.from({ length: 5 }).map((_, index) => (
                 <Star
                   className="size-2.5 fill-current"
@@ -1183,20 +1382,63 @@ function ProductCard({ product }: { product: PublicStorefrontProduct }) {
                 />
               ))}
             </span>
-            <span>4.8</span>
+            <span>{isFeatured ? "Destaque" : "Avaliado"}</span>
             <span className="text-slate-500">|</span>
-            <span>3.000+ vendidos</span>
+            <span>{product.sales_count ?? 0} vendidos</span>
           </div>
-          <p className="mt-1 line-clamp-1 text-[#c37d55] text-xs">
-            Top selling na loja Kynovra
-          </p>
-          <p className="mt-1 font-semibold text-slate-300 text-xs">
-            Bundle deals &gt;
-          </p>
+          {tagline ? (
+            <p
+              className={`mt-1 line-clamp-1 text-xs ${
+                isGoldSpotlight
+                  ? "font-bold text-amber-400"
+                  : isTopSeller
+                    ? "text-red-400"
+                    : "text-[#c37d55]"
+              }`}
+            >
+              {tagline}
+            </p>
+          ) : null}
         </div>
       </Link>
     </article>
   );
+}
+
+function getStorefrontPriceInfo(product: PublicStorefrontProduct) {
+  if (!product.show_price_publicly || typeof product.price !== "number") {
+    return { current: "No atendimento", original: null, percentOff: null };
+  }
+
+  const discount = calculateStorefrontDiscount(product);
+  const currentPrice = product.price - discount;
+
+  return {
+    current: formatStorefrontCurrency(currentPrice),
+    original: discount > 0 ? formatStorefrontCurrency(product.price) : null,
+    percentOff:
+      discount > 0 ? Math.round((discount / product.price) * 100) : null,
+  };
+}
+
+function calculateStorefrontDiscount(product: PublicStorefrontProduct) {
+  if (typeof product.price !== "number" || !product.discount_value) return 0;
+
+  if (product.discount_type === "final_price") {
+    return (
+      product.price -
+      Math.min(Math.max(product.discount_value, 0), product.price)
+    );
+  }
+
+  return 0;
+}
+
+function formatStorefrontCurrency(value: number) {
+  return value.toLocaleString("pt-BR", {
+    currency: "BRL",
+    style: "currency",
+  });
 }
 
 function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {

@@ -307,8 +307,8 @@ export async function insertManualProductEvaluation(input: {
     {
       p_product_id: input.productId,
       p_rating: input.rating,
-      p_comment: input.comment ?? null,
-      p_ratings: input.ratings ?? null,
+      p_comment: input.comment ?? undefined,
+      p_ratings: input.ratings ?? undefined,
     },
   );
 

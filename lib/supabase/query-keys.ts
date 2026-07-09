@@ -5,6 +5,9 @@ export const queryKeys = {
   audit: {
     logs: ["audit", "logs"] as const,
   },
+  checkoutEvents: {
+    clicks: ["checkout-events", "clicks"] as const,
+  },
   auth: {
     profile: ["auth", "profile"] as const,
   },

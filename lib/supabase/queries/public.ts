@@ -8,9 +8,12 @@ export type PublicProduct = Pick<
   Tables<"products">,
   | "category"
   | "checkout_url"
+  | "discount_type"
+  | "discount_value"
   | "id"
   | "image_url"
   | "image_urls"
+  | "is_featured"
   | "main_benefit"
   | "name"
   | "price"
@@ -22,8 +25,11 @@ export type PublicProduct = Pick<
 export type PublicStorefrontProduct = Pick<
   Tables<"products">,
   | "category"
+  | "discount_type"
+  | "discount_value"
   | "id"
   | "image_url"
+  | "is_featured"
   | "main_benefit"
   | "name"
   | "price"
@@ -36,7 +42,9 @@ export type PublicStorefrontProduct = Pick<
   | "status"
   | "subcategory"
   | "support_info"
->;
+> & {
+  sales_count?: number | null;
+};
 
 export type PublicStorefrontCampaign = Pick<
   Tables<"campaigns">,

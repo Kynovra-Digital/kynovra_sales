@@ -18,6 +18,8 @@ export async function listModuleRecords(moduleKey: string) {
       return normalizeRows(await listCampaigns());
     case "leads":
       return queryTable("leads");
+    case "checkout-clicks":
+      return listCheckoutClicks();
     case "team":
       return normalizeRows(await listTeamMembers());
     case "audit":
@@ -43,6 +45,19 @@ async function queryTable(tableName: string) {
 
   if (error) throw error;
   return normalizeRows((data ?? []) as Array<Record<string, Json>>);
+}
+
+async function listCheckoutClicks() {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("checkout_events")
+    .select("*, product:products(name, price), session:sales_sessions(id)")
+    .ilike("event_type", "%checkout%")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw error;
+  return normalizeRows((data ?? []) as unknown as Array<Record<string, Json>>);
 }
 
 function normalizeRows(rows: Array<Record<string, Json>>) {

@@ -21,7 +21,7 @@ export async function createInitialOrganization(
   const supabase = createClient();
   const { data, error } = await supabase.rpc("create_initial_organization", {
     p_about: input.about,
-    p_cnpj: input.personType === "legal_entity" ? (input.cnpj ?? "") : null,
+    p_cnpj: input.personType === "legal_entity" ? input.cnpj : undefined,
     p_name: input.name,
     p_person_type: input.personType,
   });

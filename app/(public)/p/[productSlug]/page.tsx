@@ -15,7 +15,13 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import {
+  type MouseEvent,
+  type ReactNode,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PoweredBy } from "@/components/public/powered-by";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,7 +59,7 @@ export default function ProductPreSalePage() {
                 product.image_url,
               ].filter((imageUrl): imageUrl is string => Boolean(imageUrl)),
             ),
-          ).slice(0, 5)
+          ).slice(0, 4)
         : [],
     [product],
   );
@@ -74,20 +80,7 @@ export default function ProductPreSalePage() {
     );
   }
 
-  const price =
-    typeof product.price === "number"
-      ? product.price.toLocaleString("pt-BR", {
-          currency: "BRL",
-          style: "currency",
-        })
-      : "Preço no atendimento";
-  const oldPrice =
-    typeof product.price === "number"
-      ? (product.price * 1.72).toLocaleString("pt-BR", {
-          currency: "BRL",
-          style: "currency",
-        })
-      : null;
+  const priceInfo = getProductPriceInfo(product);
   const description =
     product.main_benefit ??
     product.support_info ??
@@ -99,26 +92,10 @@ export default function ProductPreSalePage() {
     ? selectedImageIndex
     : 0;
   const selectedImage = productImages[safeSelectedImageIndex];
-  const thumbnailImages = Array.from({ length: 4 })
-    .map((_, slotIndex) => {
-      const imageIndex = slotIndex + 1;
-      const imageUrl = productImages[imageIndex];
-
-      if (!imageUrl) {
-        return null;
-      }
-
-      if (safeSelectedImageIndex === imageIndex) {
-        return productImages[0]
-          ? { imageUrl: productImages[0], index: 0 }
-          : null;
-      }
-
-      return { imageUrl, index: imageIndex };
-    })
-    .filter((thumbnail): thumbnail is { imageUrl: string; index: number } =>
-      Boolean(thumbnail),
-    );
+  const galleryImages = productImages.slice(0, 4).map((imageUrl, index) => ({
+    imageUrl,
+    index,
+  }));
 
   return (
     <main className="min-h-screen bg-[#f5f5f5] text-[#191919]">
@@ -139,28 +116,22 @@ export default function ProductPreSalePage() {
 
       <section className="mx-auto grid max-w-7xl gap-4 px-4 py-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:px-6">
         <div className="rounded-sm bg-white p-2 shadow-sm sm:p-3">
-          <div className="relative mx-auto aspect-square max-h-[560px] w-full max-w-[560px] overflow-hidden bg-[#f7f7f7]">
-            {selectedImage ? (
-              <Image
-                alt={product.name}
-                className="object-cover"
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 560px"
-                src={selectedImage}
-              />
-            ) : (
+          <ProductImageZoom
+            alt={product.name}
+            src={selectedImage}
+            fallback={
               <div className="grid h-full place-items-center bg-gradient-to-br from-orange-100 to-red-100 text-orange-600">
                 <ShoppingBag className="size-16" />
               </div>
-            )}
-          </div>
+            }
+          />
           <div className="mx-auto mt-2 grid max-w-[560px] grid-cols-4 gap-2">
-            {thumbnailImages.length > 0
-              ? thumbnailImages.map((thumbnail) => (
+            {galleryImages.length > 0
+              ? galleryImages.map((thumbnail) => (
                   <button
                     aria-label={`Ver imagem ${thumbnail.index + 1} de ${product.name}`}
-                    className="relative aspect-square cursor-pointer overflow-hidden border border-orange-500 bg-[#f7f7f7] transition hover:opacity-90"
+                    className="relative aspect-square cursor-pointer overflow-hidden border bg-[#f7f7f7] transition hover:opacity-90 data-[active=true]:border-orange-500 data-[active=true]:ring-2 data-[active=true]:ring-orange-500"
+                    data-active={safeSelectedImageIndex === thumbnail.index}
                     key={`${product.id}-thumb-${thumbnail.index}`}
                     onClick={() => setSelectedImageIndex(thumbnail.index)}
                     type="button"
@@ -180,9 +151,6 @@ export default function ProductPreSalePage() {
 
         <div className="rounded-sm bg-white p-4 shadow-sm lg:p-6">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-[2px] bg-[#ffe100] px-1.5 py-0.5 font-black text-[10px] text-black uppercase">
-              Choice
-            </span>
             <span className="text-slate-500 text-xs uppercase tracking-[0.14em]">
               {product.category ?? "Produto Kynovra"}
             </span>
@@ -194,12 +162,7 @@ export default function ProductPreSalePage() {
 
           <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
             <span className="flex items-center gap-0.5 text-orange-500">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Star
-                  className="size-4 fill-current"
-                  key={`rating-${product.id}-${index}`}
-                />
-              ))}
+              <RatingStars rating={averageRating ?? 0} />
             </span>
             <span className="font-semibold">
               {averageRating ? averageRating.toFixed(1) : "Novo"}
@@ -211,28 +174,25 @@ export default function ProductPreSalePage() {
                 : "Sem avaliações ainda"}
             </span>
             <span className="text-slate-300">|</span>
-            <span className="text-orange-600">Top selling</span>
+            <span className="text-orange-600">Atendimento verificado</span>
           </div>
 
           <div className="mt-5 rounded-sm bg-[#fff5ef] p-4">
             <div className="flex flex-wrap items-end gap-2">
               <span className="font-black text-4xl text-orange-600">
-                {price}
+                {priceInfo.current}
               </span>
-              {oldPrice ? (
+              {priceInfo.original ? (
                 <span className="pb-1 text-slate-500 text-sm line-through">
-                  {oldPrice}
+                  {priceInfo.original}
                 </span>
               ) : null}
-              {oldPrice ? (
+              {priceInfo.percentOff ? (
                 <span className="mb-1 rounded-sm bg-orange-600 px-1.5 py-0.5 font-bold text-white text-xs">
-                  -42%
+                  -{priceInfo.percentOff}%
                 </span>
               ) : null}
             </div>
-            <p className="mt-2 font-medium text-orange-700 text-sm">
-              Bundle deals disponíveis no atendimento
-            </p>
           </div>
 
           <div className="mt-5 grid gap-3 text-sm">
@@ -489,6 +449,54 @@ function getAverageRating(reviews: PublicProductReview[]) {
   return ratings.reduce((total, rating) => total + rating, 0) / ratings.length;
 }
 
+function getProductPriceInfo(product: {
+  discount_type?: string | null;
+  discount_value?: number | null;
+  price: number | null;
+}) {
+  if (typeof product.price !== "number") {
+    return {
+      current: "Preço no atendimento",
+      original: null,
+      percentOff: null,
+    };
+  }
+
+  const discount = calculateDiscount(product);
+  const currentPrice = product.price - discount;
+
+  return {
+    current: formatCurrency(currentPrice),
+    original: discount > 0 ? formatCurrency(product.price) : null,
+    percentOff:
+      discount > 0 ? Math.round((discount / product.price) * 100) : null,
+  };
+}
+
+function calculateDiscount(product: {
+  discount_type?: string | null;
+  discount_value?: number | null;
+  price: number | null;
+}) {
+  if (typeof product.price !== "number" || !product.discount_value) return 0;
+
+  if (product.discount_type === "final_price") {
+    return (
+      product.price -
+      Math.min(Math.max(product.discount_value, 0), product.price)
+    );
+  }
+
+  return 0;
+}
+
+function formatCurrency(value: number) {
+  return value.toLocaleString("pt-BR", {
+    currency: "BRL",
+    style: "currency",
+  });
+}
+
 function formatReviewDate(date: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -513,6 +521,58 @@ function InfoRow({
         <p className="font-semibold">{label}</p>
         <p className="mt-0.5 text-slate-500 text-xs leading-relaxed">{text}</p>
       </div>
+    </div>
+  );
+}
+
+function ProductImageZoom({
+  alt,
+  fallback,
+  src,
+}: {
+  alt: string;
+  fallback: ReactNode;
+  src: string | undefined;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState({ active: false, x: 50, y: 50 });
+
+  function handleMouseMove(event: MouseEvent<HTMLDivElement>) {
+    const node = containerRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    setZoom({ active: true, x, y });
+  }
+
+  return (
+    <div
+      aria-label={
+        src ? `Imagem ampliada de ${alt}` : "Imagem do produto indisponível"
+      }
+      className="relative mx-auto aspect-square max-h-[560px] w-full max-w-[560px] cursor-zoom-in overflow-hidden bg-[#f7f7f7]"
+      onMouseLeave={() => setZoom((prev) => ({ ...prev, active: false }))}
+      onMouseMove={handleMouseMove}
+      ref={containerRef}
+      role="img"
+    >
+      {src ? (
+        <Image
+          alt={alt}
+          className="object-cover transition-transform duration-200 ease-out"
+          fill
+          priority
+          sizes="(max-width: 1024px) 100vw, 560px"
+          src={src}
+          style={{
+            transform: zoom.active ? "scale(2)" : "scale(1)",
+            transformOrigin: `${zoom.x}% ${zoom.y}%`,
+          }}
+        />
+      ) : (
+        fallback
+      )}
     </div>
   );
 }
