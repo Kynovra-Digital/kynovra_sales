@@ -147,12 +147,26 @@ export default function StorefrontPage() {
   ).length;
   const hasSearch = normalizedSearch.length > 0;
 
+  const [shownLoginToast, setShownLoginToast] = useState(false);
+
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getSession().then(({ data: sessionData }) => {
       const user = sessionData.session?.user ?? null;
       setCurrentUser(user);
+      if (!user && !shownLoginToast) {
+        toast("Faça login com Google para uma experiência completa", {
+          action: {
+            label: "Entrar com Google",
+            onClick: () => {
+              window.location.href = "/login?next=%2Floja";
+            },
+          },
+          duration: 8000,
+        });
+        setShownLoginToast(true);
+      }
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
