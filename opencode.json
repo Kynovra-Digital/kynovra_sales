@@ -154,7 +154,11 @@
       },
       "models": {
         "moonshotai/Kimi-K2.6": {
-          "name": "Kimi-K2.6"
+          "name": "Kimi-K2.6",
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
         }
       }
     },
