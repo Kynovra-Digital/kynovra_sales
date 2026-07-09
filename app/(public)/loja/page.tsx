@@ -152,23 +152,29 @@ export default function StorefrontPage() {
 
     supabase.auth.getSession().then(({ data: sessionData }) => {
       setCurrentUser(sessionData.session?.user ?? null);
+      if (!sessionData.session?.user) {
+        initGoogleOneTap(supabase);
+      }
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setCurrentUser(session?.user ?? null);
-      },
-    );
+    const { data: authData } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+    });
 
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+    function initGoogleOneTap(supabase: ReturnType<typeof createClient>) {
+      if (document.getElementById("gsi-script")) return;
 
-    script.onload = () => {
-      if (typeof window !== "undefined" && (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google) {
-        (window as Window & { google?: { accounts: { id: { initialize: (cfg: { client_id: string; callback: (res: { credential: string }) => void }) => void; prompt: () => void } } } }).google!.accounts.id.initialize({
+      const script = document.createElement("script");
+      script.id = "gsi-script";
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+
+      script.onload = () => {
+        const gsi = (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google;
+        if (!gsi) return;
+        gsi.accounts.id.initialize({
           client_id: "977887434311-smu4qh5kgp0hlbeje0e2f61j8dadh6fo.apps.googleusercontent.com",
           callback: async (res: { credential: string }) => {
             const { error } = await supabase.auth.signInWithIdToken({
@@ -181,12 +187,12 @@ export default function StorefrontPage() {
             }
           },
         });
-        (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google!.accounts.id.prompt();
-      }
-    };
+        gsi.accounts.id.prompt();
+      };
+    }
 
     return () => {
-      authListener.subscription.unsubscribe();
+      authData.subscription.unsubscribe();
     };
   }, []);
 
