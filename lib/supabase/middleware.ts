@@ -26,29 +26,30 @@ const adminPrefixes = [
   "/settings",
   "/store",
   "/team",
+  "/clients",
 ];
 
 export async function updateSession(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = adminPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
   const isLoginRoute = pathname === "/login";
   const isWelcomeRoute = pathname === "/welcome";
+  const needsSession = isAdminRoute || isLoginRoute || isWelcomeRoute;
 
-  let response = NextResponse.next({
-    request,
-  });
-
-  if (!(isAdminRoute || isLoginRoute || isWelcomeRoute)) {
-    return response;
+  if (!needsSession) {
+    return NextResponse.next({ request });
   }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return response;
+    return NextResponse.next({ request });
   }
+
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -60,9 +61,7 @@ export async function updateSession(request: NextRequest) {
           request.cookies.set(name, value);
         }
 
-        response = NextResponse.next({
-          request,
-        });
+        response = NextResponse.next({ request });
 
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);

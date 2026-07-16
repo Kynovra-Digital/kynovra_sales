@@ -205,3 +205,42 @@ Segredos, chaves de provedores, service role, SMTP, CORS e variaveis de Edge Fun
 ## Status
 
 Este projeto esta em evolucao ativa. Ao modificar rotas, fluxos de atendimento, suporte, IA, storage, notificacoes ou permissoes, preserve a arquitetura aprovada e mantenha Supabase como fonte da verdade.
+
+## Alteracoes Recentes
+
+### Middleware / Proxy
+
+- `lib/supabase/middleware.ts` agora faz early-return em rotas publicas antes de instanciar o cliente Supabase, evitando chamadas desnecessarias de `auth.getUser()` em rotas que nao exigem sessao.
+- Lista de prefixes admin atualizada (adicionado `/clients`).
+- Reduz timeouts em rotas publicas no dev e em producao, removendo latencia induzida pelo proxy.
+
+### Google One Tap
+
+- Helper novo em `lib/google/one-tap.ts` isola a inicializacao do Google Identity Services.
+- `client_id` do Google One Tap agora vem da variavel de ambiente `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (sem hardcoding no componente).
+- `lib/env.ts` recebeu `NEXT_PUBLIC_GOOGLE_CLIENT_ID` no schema `@t3-oss/env-nextjs`.
+- `app/(public)/loja/page.tsx` passou a usar o helper `initGoogleOneTap`, removendo o client_id inline.
+- `components/public/public-login-prompt.tsx` agora dispara One Tap no mount, cobrindo as salas `/room/[publicToken]` e `/suporte/sala/[publicToken]` quando o visitante nao esta autenticado.
+- Em localhost/127.0.0.1 o One Tap pode nao renderizar por restricoes de FedCM/cookies de terceiros do Chrome; em dominio de producao autorizado no Google Cloud Console ele volta a funcionar automaticamente.
+
+### Clientes / Equipe
+
+- `lib/supabase/queries/team.ts` normaliza o campo `is_banned` ao montar dados de membros, mantendo compatibilidade com o recurso de banimento de clientes.
+
+### Segredos e Providers de IA (opencode.json)
+
+- Foram removidas `apiKey` hardcoded de providers adicionados em `opencode.json` (Tokenbay, HCNSEC, KIE-AI). Providers OpenAI-compatible agora ficam apenas com `baseURL`; chaves devem ser fornecidas pelo ambiente local/CI do agenre, nunca versionadas.
+- Confirmado via busca que nao ha `client_id` do Google hardcoded em componentes; o fluxo usa `NEXT_PUBLIC_GOOGLE_CLIENT_ID` via `lib/env.ts`.
+
+### Validacao
+
+- `pnpm build`: PASS
+- `pnpm lint`: PASS (somente warnings pre-existentes)
+- `pnpm test:run`: PASS
+- `pnpm check`: mantem avisos pre-existentes de formatacao/template literals em arquivos nao tocados nesta alteracao.
+
+### Funcionamento do Google One Tap
+
+- Em `localhost`/`127.0.0.1` o Google One Tap pode nao renderizar por restricoes de FedCM/cookies de terceiros do Chrome; em dominio de producao autorizado no Google Cloud Console ele volta a funcionar automaticamente.
+- Para testar One Tap localmente, use um dominio/localtunnel autorizado no Google Cloud Console ou rode em Vercel preview com dominio valido.
+

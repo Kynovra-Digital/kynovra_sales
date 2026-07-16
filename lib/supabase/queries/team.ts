@@ -73,6 +73,7 @@ function normalizeMember(
     directPermissionKeys: toStringArray(member.directPermissionKeys),
     full_name: nullableStringFromRecord(member, "full_name"),
     id: stringFromRecord(member, "id"),
+    is_banned: Boolean(member.is_banned),
     organization_id: stringFromRecord(member, "organization_id"),
     role: stringFromRecord(member, "role"),
     updated_at: stringFromRecord(member, "updated_at"),

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePublicAuth } from "@/hooks/use-public-auth";
+import { initGoogleOneTap } from "@/lib/google/one-tap";
+import { createClient } from "@/lib/supabase/client";
 
 type PublicLoginPromptProps = {
   description?: string;
@@ -22,6 +24,13 @@ export function PublicLoginPrompt({
 }: PublicLoginPromptProps) {
   const { signInWithGoogle, isLoading } = usePublicAuth();
   const loginHref = usePublicLoginHref(redirectPath);
+
+  useEffect(() => {
+    const supabase = createClient();
+    initGoogleOneTap(supabase, (message) => {
+      console.error("One Tap login error:", message);
+    });
+  }, []);
 
   async function handleGoogleLogin() {
     try {

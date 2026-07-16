@@ -33,8 +33,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { initGoogleOneTap } from "@/lib/google/one-tap";
 import { storefrontPrimaryCategories } from "@/lib/store/categories";
 import { createClient } from "@/lib/supabase/client";
+import { listNotifications } from "@/lib/supabase/queries/notifications";
 import {
   getPublicStorefront,
   getPublicStorefrontCategories,
@@ -42,7 +44,6 @@ import {
   type PublicStorefrontCategory,
   type PublicStorefrontProduct,
 } from "@/lib/supabase/queries/public";
-import { listNotifications } from "@/lib/supabase/queries/notifications";
 import { queryKeys } from "@/lib/supabase/query-keys";
 
 const STORE_ALL_CATEGORIES_FILTER = "__all_categories__";
@@ -153,43 +154,17 @@ export default function StorefrontPage() {
     supabase.auth.getSession().then(({ data: sessionData }) => {
       setCurrentUser(sessionData.session?.user ?? null);
       if (!sessionData.session?.user) {
-        initGoogleOneTap(supabase);
+        initGoogleOneTap(supabase, (message) =>
+          toast.error(`Erro ao fazer login: ${message}`),
+        );
       }
     });
 
-    const { data: authData } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user ?? null);
-    });
-
-    function initGoogleOneTap(supabase: ReturnType<typeof createClient>) {
-      if (document.getElementById("gsi-script")) return;
-
-      const script = document.createElement("script");
-      script.id = "gsi-script";
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-
-      script.onload = () => {
-        const gsi = (window as Window & { google?: { accounts: { id: { initialize: (cfg: object) => void; prompt: () => void } } } }).google;
-        if (!gsi) return;
-        gsi.accounts.id.initialize({
-          client_id: "977887434311-smu4qh5kgp0hlbeje0e2f61j8dadh6fo.apps.googleusercontent.com",
-          callback: async (res: { credential: string }) => {
-            const { error } = await supabase.auth.signInWithIdToken({
-              provider: "google",
-              token: res.credential,
-            });
-            if (error) {
-              console.error("One Tap login error:", error);
-              toast.error("Erro ao fazer login: " + error.message);
-            }
-          },
-        });
-        gsi.accounts.id.prompt();
-      };
-    }
+    const { data: authData } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setCurrentUser(session?.user ?? null);
+      },
+    );
 
     return () => {
       authData.subscription.unsubscribe();
