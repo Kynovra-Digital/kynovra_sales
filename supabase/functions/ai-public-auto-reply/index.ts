@@ -101,7 +101,7 @@ Deno.serve(async (request) => {
       provider,
       temperature: aiSettings.temperature ?? 0.7,
     });
-    const content = result.text.trim();
+    const content = (result.text || result.reasoning || "").trim();
 
     if (!content) {
       return jsonResponse({
@@ -155,7 +155,13 @@ Deno.serve(async (request) => {
       replied: true,
     });
   } catch (error) {
-    console.error("ai-public-auto-reply failed", error);
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : "";
+    console.error("ai-public-auto-reply failed", {
+      message,
+      stack,
+      name: error instanceof Error ? error.name : typeof error,
+    });
     return jsonResponse(
       {
         message: "Não foi possível gerar a resposta automática da IA.",

@@ -15,15 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-
-type PublicAccessModalProps = {
-  description?: string;
-  initialView?: "choice" | "auth";
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-  redirectPath?: string;
-  title?: string;
-};
+import type { PublicAccessModalProps } from "@/types/public";
 
 export function PublicAccessModal({
   description = "Faça login com e-mail e senha ou continue com Google para acessar esta área com segurança.",

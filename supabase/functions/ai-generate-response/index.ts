@@ -55,13 +55,13 @@ Deno.serve(async (request) => {
       provider,
     });
 
-    const generatedText = result.text;
+    const generatedText = (result.text || result.reasoning || "").trim();
 
     const table =
       body.sessionType === "support" ? "support_messages" : "sales_messages";
 
     const { error } = await supabase.from(table).insert({
-      content: generatedText.trim(),
+      content: generatedText,
       metadata: {
         model: modelId,
         provider,

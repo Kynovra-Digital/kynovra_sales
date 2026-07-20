@@ -448,11 +448,18 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ### Providers Suportados
 
-- SiliconFlow
+- FreeTokenFaucet (AI Gateway compatível com OpenAI; chave `siliconflow` no banco é apenas identificador lógico legacy).
 
 ### Modelos Recomendados
 
-- SiliconFlow: `deepseek-ai/DeepSeek-V4-Flash`
+- FreeTokenFaucet: `deepseek-v4-flash`
+
+### Secrets do AI Gateway
+
+- `FREETOKENFAUCET_API_KEY` (obrigatorio) em Supabase Secrets.
+- Base URL fixa no backend: `https://freetokenfaucet.com/v1`.
+- NEVER comitar a token `tf_...` no repositorio.
+- Aceita fallback legacy `AI_GATEWAY_API_KEY`, `SILICONFLOW_API_KEY` e `SILICON_FLOW_API_KEY` apenas para transitional; remover apos migracao.
 
 ### Edge Functions
 
@@ -723,3 +730,4 @@ Ao terminar uma tarefa, responder:
 - O schema atual de `ai_agents` pode usar nomes legados como `internal_name` e `response_rules`; em novas alteracoes, preservar compatibilidade com o banco atual e evitar reintroduzir provider/modelo por agente.
 - As rotas `/agents` e `/ai-settings` foram removidas; NEVER reintroduzir modulos separados de IA.
 - `lib/supabase/queries/public.ts` usa `document.cookie` diretamente para `visitor_id`; Biome alerta, mas e aviso antigo, nao erro.
+- Provider no banco continua com chave logica `siliconflow` para nao quebrar constraint/RPC legada, mas o backend aponta para `https://freetokenfaucet.com/v1` via `FREETOKENFAUCET_API_KEY`. Manter assim ate refactor global do schema de IA.

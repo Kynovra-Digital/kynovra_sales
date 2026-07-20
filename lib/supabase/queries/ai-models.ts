@@ -16,9 +16,9 @@ export type AIProvider = "siliconflow";
 
 const SILICONFLOW_MODELS: AIGatewayModel[] = [
   {
-    id: "deepseek-ai/DeepSeek-V4-Flash",
+    id: "deepseek-v4-flash",
     name: "DeepSeek V4 Flash",
-    provider: "SiliconFlow",
+    provider: "FreeTokenFaucet",
   },
 ];
 

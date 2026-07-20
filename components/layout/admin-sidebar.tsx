@@ -16,11 +16,7 @@ import { adminNavigationGroups } from "@/lib/navigation/admin-navigation";
 import { canAccessPermission } from "@/lib/permissions/admin-permissions";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
-
-type AdminSidebarProps = {
-  mobile?: boolean;
-  onNavigate?: () => void;
-};
+import type { AdminSidebarProps } from "@/types/layout";
 
 export function AdminSidebar({
   mobile = false,

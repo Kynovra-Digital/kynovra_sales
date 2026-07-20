@@ -1,12 +1,6 @@
 import { Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-
-type EmptyStateProps = {
-  title: string;
-  description?: string;
-  action?: ReactNode;
-};
+import type { EmptyStateProps } from "@/types/shared";
 
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (

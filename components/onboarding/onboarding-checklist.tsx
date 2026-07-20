@@ -1,14 +1,6 @@
 import { CheckCircle2, Circle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type OnboardingChecklistItem = {
-  label: string;
-  completed?: boolean;
-};
-
-type OnboardingChecklistProps = {
-  items: OnboardingChecklistItem[];
-};
+import type { OnboardingChecklistProps } from "@/types/ux";
 
 export function OnboardingChecklist({ items }: OnboardingChecklistProps) {
   return (

@@ -35,8 +35,7 @@ import {
   testAiConnection,
 } from "@/lib/supabase/queries/ai-settings";
 import { queryKeys } from "@/lib/supabase/query-keys";
-
-type ConnectionState = "error" | "idle" | "success" | "testing";
+import type { AIConnectionState } from "@/types/settings";
 
 export function AISettingsSection() {
   const { organization, profile } = useAuth();
@@ -53,7 +52,7 @@ export function AISettingsSection() {
   const [humanAcceptTimeoutSeconds, setHumanAcceptTimeoutSeconds] =
     useState("60");
   const [connectionState, setConnectionState] =
-    useState<ConnectionState>("idle");
+    useState<AIConnectionState>("idle");
   const [hasTestedConnection, setHasTestedConnection] = useState(false);
   const organizationId = organization?.id ?? profile?.organization_id ?? "";
 
@@ -459,9 +458,9 @@ export function AISettingsSection() {
 
       <div className="grid min-w-0 gap-3 md:grid-cols-3">
         <InfoCard
-          description="SiliconFlow usa secrets server-side separados no Supabase."
+          description="FreeTokenFaucet usa secrets server-side separados no Supabase (FREETOKENFAUCET_API_KEY)."
           icon={Sparkles}
-          title="SiliconFlow"
+          title="FreeTokenFaucet"
         />
         <InfoCard
           description="A lista de modelos é carregada dinamicamente. Não há catálogo hardcoded como fonte final."
@@ -479,7 +478,7 @@ export function AISettingsSection() {
 }
 
 function getProviderName(_provider: AIProvider) {
-  return "SiliconFlow";
+  return "FreeTokenFaucet";
 }
 
 function normalizeProvider(_provider?: string | null): AIProvider {

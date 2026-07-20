@@ -6,26 +6,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type {
-  AIHarnessMode,
-  AIHarnessSessionType,
-} from "@/lib/ai/harness/types";
+import type { AIHarnessSessionType } from "@/lib/ai/harness/types";
 import {
   registerAIHarnessBadResponse,
   runAIHarnessTool,
 } from "@/lib/supabase/queries/ai-harness";
-
-type AIHarnessPanelProps = {
-  currentMessage: string;
-  handledByType?: string | null;
-  model?: string;
-  mode: AIHarnessMode;
-  modelId?: string;
-  onUseSuggestion: (suggestion: string) => void;
-  organizationId?: string;
-  sessionId: string;
-  sessionType: AIHarnessSessionType;
-};
+import type { AIHarnessPanelProps } from "@/types/chat";
 
 const defaultToolBySessionType: Record<AIHarnessSessionType, string> = {
   sales: "sales.suggest_reply",

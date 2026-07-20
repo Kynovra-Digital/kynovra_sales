@@ -1,5 +1,4 @@
 import { ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -14,20 +13,10 @@ import {
 } from "@/components/ui/table";
 import { getClientAppOrigin } from "@/lib/url/get-app-origin";
 import { buildProductAttendanceLink } from "@/lib/url/public-links";
+import type { ModuleRow } from "@/types/module-row";
+import type { ResponsiveDataViewProps } from "@/types/shared";
 
-export type ModuleRow = {
-  id: string;
-  name: string;
-  status?: string;
-  [key: string]: unknown;
-};
-
-type ResponsiveDataViewProps = {
-  columns: string[];
-  rows: ModuleRow[];
-  onOpen: (row: ModuleRow) => void;
-  renderActions?: (row: ModuleRow) => ReactNode;
-};
+export type { ModuleRow } from "@/types/module-row";
 
 function getAttendanceLink(row: ModuleRow, origin: string) {
   const slug = row.Slug;

@@ -1,15 +1,6 @@
-import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-type MetricCardProps = {
-  title: string;
-  value: string;
-  description?: string;
-  icon?: ReactNode;
-  trend?: string;
-  glow?: "blue" | "purple" | "green";
-};
+import type { MetricCardProps } from "@/types/shared";
 
 export function MetricCard({
   title,

@@ -14,14 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-type ConfirmationLevel = "light" | "medium" | "severe";
-
-type ConfirmationLevelDialogProps = {
-  level: ConfirmationLevel;
-  actionLabel: string;
-  keyword?: "CONFIRMAR" | "ARQUIVAR" | "REMOVER" | "BLOQUEAR" | "EXPIRAR";
-};
+import type { ConfirmationLevelDialogProps } from "@/types/ux";
 
 export function ConfirmationLevelDialog({
   level,

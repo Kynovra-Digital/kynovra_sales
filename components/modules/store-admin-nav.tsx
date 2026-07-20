@@ -1,6 +1,7 @@
 import { FolderTree, Megaphone, Star } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import type { StoreAdminNavProps } from "@/types/modules";
 
 const storeAdminTabs = [
   {
@@ -20,11 +21,7 @@ const storeAdminTabs = [
   },
 ];
 
-export function StoreAdminNav({
-  active,
-}: {
-  active: "campaigns" | "categories" | "qualification";
-}) {
+export function StoreAdminNav({ active }: StoreAdminNavProps) {
   return (
     <nav
       aria-label="Seções da loja"

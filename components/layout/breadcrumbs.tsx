@@ -1,13 +1,7 @@
 import Link from "next/link";
+import type { BreadcrumbsProps } from "@/types/breadcrumbs";
 
-export type BreadcrumbItem = {
-  label: string;
-  href?: string;
-};
-
-type BreadcrumbsProps = {
-  items: BreadcrumbItem[];
-};
+export type { BreadcrumbItem } from "@/types/breadcrumbs";
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (

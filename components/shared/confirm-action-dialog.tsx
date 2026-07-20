@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,14 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-type ConfirmActionDialogProps = {
-  trigger: ReactNode;
-  title: string;
-  description: string;
-  confirmLabel?: string;
-  onConfirm: () => void;
-};
+import type { ConfirmActionDialogProps } from "@/types/shared";
 
 export function ConfirmActionDialog({
   trigger,

@@ -1,22 +1,7 @@
 import { env } from "@/lib/env";
+import type { GoogleOneTapClient, SupabaseLike } from "@/types/lib";
 
-export type GoogleOneTapClient = {
-  accounts: {
-    id: {
-      initialize: (config: object) => void;
-      prompt: () => void;
-    };
-  };
-};
-
-type SupabaseLike = {
-  auth: {
-    signInWithIdToken: (args: {
-      provider: "google";
-      token: string;
-    }) => Promise<{ error: { message: string } | null }>;
-  };
-};
+export type { GoogleOneTapClient } from "@/types/lib";
 
 const SCRIPT_ID = "kynovra-gsi-script";
 

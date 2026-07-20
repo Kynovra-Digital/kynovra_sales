@@ -192,7 +192,7 @@ async function generateFirstAIMessage({
   try {
     const context = await loadSessionContext(supabase, session, sessionType);
     const result = await generateAIText({
-      maxOutputTokens: settings.max_output_tokens ?? 240,
+      maxOutputTokens: settings.max_output_tokens ?? 800,
       modelId: settings.model_id,
       prompt: buildPrompt({
         context,
@@ -203,7 +203,7 @@ async function generateFirstAIMessage({
       temperature: settings.temperature ?? 0.7,
     });
 
-    return result.text.trim() || fallback;
+    return (result.text || result.reasoning || "").trim() || fallback;
   } catch (error) {
     console.error("ai-auto-takeover first message failed", error);
     return fallback;

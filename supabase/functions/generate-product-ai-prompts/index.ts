@@ -172,7 +172,9 @@ Deno.serve(async (request) => {
       });
     }
 
-    const finalPrompt = sanitizeGeneratedPrompt(completion.text);
+    const finalPrompt = sanitizeGeneratedPrompt(
+      completion.text || completion.reasoning || "",
+    );
 
     stage = "registro de uso";
     await supabase.from("ai_agent_usage").insert({

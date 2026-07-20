@@ -8,13 +8,7 @@ import { Button } from "@/components/ui/button";
 import { usePublicAuth } from "@/hooks/use-public-auth";
 import { initGoogleOneTap } from "@/lib/google/one-tap";
 import { createClient } from "@/lib/supabase/client";
-
-type PublicLoginPromptProps = {
-  description?: string;
-  onLoginComplete?: () => void;
-  redirectPath?: string;
-  title?: string;
-};
+import type { PublicLoginPromptProps } from "@/types/public";
 
 export function PublicLoginPrompt({
   description = "Faça login com e-mail e senha ou continue com Google para acessar sua sala de atendimento.",

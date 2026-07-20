@@ -32,12 +32,7 @@ import {
 import { queryKeys } from "@/lib/supabase/query-keys";
 import { uploadFileToBucket } from "@/lib/supabase/storage/upload-file";
 import { cn } from "@/lib/utils";
-
-type ManualEvaluationDialogProps = {
-  productId?: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+import type { ManualEvaluationDialogProps } from "@/types/chat";
 
 export function ManualEvaluationDialog({
   productId,

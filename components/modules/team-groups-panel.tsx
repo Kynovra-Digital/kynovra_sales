@@ -31,24 +31,11 @@ import {
   type TeamMemberWithPermissions,
 } from "@/lib/supabase/queries/team";
 import { queryKeys } from "@/lib/supabase/query-keys";
-
-type TeamGroupsPanelProps = {
-  canManageTeam: boolean;
-  organizationId: string;
-};
-
-type TeamGroupFormState = {
-  description: string;
-  groupId?: string;
-  memberIds: string[];
-  name: string;
-  permissionKeys: string[];
-};
-
-type MemberPermissionFormState = {
-  member: TeamMemberWithPermissions | null;
-  permissionKeys: string[];
-};
+import type {
+  MemberPermissionFormState,
+  TeamGroupFormState,
+  TeamGroupsPanelProps,
+} from "@/types/ux";
 
 const emptyFormState: TeamGroupFormState = {
   description: "",

@@ -11,6 +11,7 @@ import { OnboardingTutorialModal } from "@/components/onboarding/onboarding-tuto
 import { MetricCard } from "@/components/shared/metric-card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { listClients } from "@/lib/supabase/queries/clients";
 import {
   type DashboardOverview,
   type DashboardPeriod,
@@ -19,7 +20,6 @@ import {
   subscribeDashboardOverview,
   subscribeDashboardTimeline,
 } from "@/lib/supabase/queries/dashboard";
-import { listClients } from "@/lib/supabase/queries/clients";
 import { cn } from "@/lib/utils";
 
 const dashboardPeriods: Array<{ label: string; value: DashboardPeriod }> = [

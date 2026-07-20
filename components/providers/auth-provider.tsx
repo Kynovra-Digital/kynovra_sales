@@ -9,16 +9,9 @@ import {
   useMemo,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import {
-  type AuthContextData,
-  getAuthContext,
-} from "@/lib/supabase/queries/auth";
+import { getAuthContext } from "@/lib/supabase/queries/auth";
 import { queryKeys } from "@/lib/supabase/query-keys";
-
-type AuthProviderValue = AuthContextData & {
-  isLoading: boolean;
-  signOut: () => Promise<void>;
-};
+import type { AuthProviderValue } from "@/types/auth-provider";
 
 const emptyAuth: AuthProviderValue = {
   isLoading: true,

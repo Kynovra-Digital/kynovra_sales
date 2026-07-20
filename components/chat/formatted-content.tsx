@@ -2,12 +2,7 @@
 
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
-
-interface FormattedContentProps {
-  /** Conteúdo da mensagem. Partes envoltas em **texto** viram negrito. */
-  children: string;
-  className?: string;
-}
+import type { FormattedContentProps, InlineSegmentProps } from "@/types/chat";
 
 /**
  * Faz o parse mínimo de markdown inline para chat de atendimento.
@@ -29,7 +24,9 @@ export function FormattedContent({
   const parts = children.split(BOLD_PATTERN);
 
   return (
-    <span className={cn("whitespace-pre-wrap break-words", className)}>
+    <span
+      className={cn("chat-message whitespace-pre-wrap break-words", className)}
+    >
       {parts.map((part, index) => {
         if (index % 2 === 1) {
           // biome-ignore lint/suspicious/noArrayIndexKey: split determinístico; a posição define se o trecho é negrito ou texto comum.
@@ -42,13 +39,7 @@ export function FormattedContent({
   );
 }
 
-function InlineSegment({
-  isBold = false,
-  text,
-}: {
-  isBold?: boolean;
-  text: string;
-}) {
+function InlineSegment({ isBold = false, text }: InlineSegmentProps) {
   const parts = text.split(URL_PATTERN);
   const content = parts.map((part, index) => {
     if (URL_ONLY_PATTERN.test(part)) {

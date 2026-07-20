@@ -7,14 +7,7 @@ import {
   UsersRound,
   Zap,
 } from "lucide-react";
-import type { ReactNode } from "react";
-
-type AuthShellProps = {
-  children: ReactNode;
-  eyebrow: string;
-  title: string;
-  description: string;
-};
+import type { AuthShellProps } from "@/types/auth";
 
 const signalItems = [
   { icon: Activity, label: "Atendimento", value: "ao vivo" },

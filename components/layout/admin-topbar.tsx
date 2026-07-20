@@ -5,9 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
   BellRing,
-  BellOff,
-  BellPlus,
-  BellElectric,
   ChevronDown,
   CircleHelp,
   Focus,
@@ -204,14 +201,17 @@ export function AdminTopbar() {
           onClick={() => setProfileOpen(true)}
           type="button"
         >
-<Avatar className="size-8 border border-white/10 ring-2 ring-primary/20 transition-transform group-hover:scale-105">
-              {user?.user_metadata?.avatar_url && (
-                <AvatarImage src={user.user_metadata.avatar_url} alt={displayName} />
-              )}
-              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-kynovra-tech-purple/20 text-[11px] font-bold">
-                {initials || "KS"}
-              </AvatarFallback>
-            </Avatar>
+          <Avatar className="size-8 border border-white/10 ring-2 ring-primary/20 transition-transform group-hover:scale-105">
+            {user?.user_metadata?.avatar_url && (
+              <AvatarImage
+                src={user.user_metadata.avatar_url}
+                alt={displayName}
+              />
+            )}
+            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-kynovra-tech-purple/20 text-[11px] font-bold">
+              {initials || "KS"}
+            </AvatarFallback>
+          </Avatar>
           <div className="hidden flex-col items-start leading-none md:flex">
             <span className="text-[12px] font-semibold text-white truncate max-w-[100px]">
               {displayName}

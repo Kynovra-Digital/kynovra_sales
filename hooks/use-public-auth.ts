@@ -2,13 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { PublicUser } from "@/types/auth";
 
-export type PublicUser = {
-  id: string;
-  email: string;
-  name: string | null;
-  avatar_url: string | null;
-};
+export type { PublicUser } from "@/types/auth";
 
 export function usePublicAuth() {
   const [user, setUser] = useState<PublicUser | null>(null);

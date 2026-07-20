@@ -35,8 +35,9 @@ import {
 } from "@/lib/supabase/queries/support";
 import { queryKeys } from "@/lib/supabase/query-keys";
 import { cn } from "@/lib/utils";
+import type { SupportWorkspaceProps } from "@/types/chat";
 
-export function SupportWorkspace({ session }: { session: SupportTicketView }) {
+export function SupportWorkspace({ session }: SupportWorkspaceProps) {
   const { organization, profile } = useAuth();
   const queryClient = useQueryClient();
   const organizationId = organization?.id ?? profile?.organization_id ?? "";

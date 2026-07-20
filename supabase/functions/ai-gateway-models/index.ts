@@ -2,9 +2,9 @@ import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
 
 const SILICONFLOW_MODELS = [
   {
-    id: "deepseek-ai/DeepSeek-V4-Flash",
+    id: "deepseek-v4-flash",
     name: "DeepSeek V4 Flash",
-    provider: "SiliconFlow",
+    provider: "FreeTokenFaucet",
   },
 ];
 

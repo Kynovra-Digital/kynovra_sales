@@ -1,12 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-type StatusTone = "amber" | "blue" | "gray" | "green" | "purple" | "red";
-
-type StatusBadgeProps = {
-  label: string;
-  tone?: StatusTone;
-};
+import type { StatusBadgeProps, StatusTone } from "@/types/shared";
 
 const statusToneByLabel: Record<string, StatusTone> = {
   "Agente contextual": "purple",

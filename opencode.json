@@ -2,196 +2,30 @@
   "$schema": "https://opencode.ai/config.json",
   "share": "disabled",
   "autoupdate": false,
-
+  "default_agent": "build",
   "instructions": [
     "AGENTS.md",
     ".opencode/project-rules.md"
   ],
-
   "skills": {
     "paths": [],
     "urls": []
   },
-
   "agent": {
     "build": {
-      "model": "agentrouter/glm-5.2",
+      "model": "hcnsec/glm-5.2",
       "mode": "primary",
-      "maxSteps": 80,
-      "description": "Primary coding agent"
+      "steps": 80,
+      "description": "Primary coding agent for Kynovra Sales (Next.js 16 + Supabase)"
     },
     "plan": {
-      "model": "agentrouter/gpt-5.5",
-      "mode": "primary",
-      "maxSteps": 40,
-      "description": "Planning agent"
+      "model": "hcnsec/glm-5.2",
+      "mode": "subagent",
+      "steps": 40,
+      "description": "Planning agent. Read-only planning before implementation."
     }
   },
-
   "provider": {
-    "agentrouter": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "AgentRouter",
-      "options": {
-        "baseURL": "https://agentrouter.org/v1"
-      },
-      "models": {
-        "gpt-5.5": {
-          "name": "GPT-5.5"
-        },
-        "glm-5.2": {
-          "name": "GLM-5.2"
-        }
-      }
-    },
-    
-    "nvidia": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "NVIDIA",
-      "options": {
-        "baseURL": "https://integrate.api.nvidia.com/v1"
-      },
-      "models": {
-        "z-ai/glm-5.2": {
-          "name": "GLM-5.2"
-        }
-      }
-    },
-
-    "featherless": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Featherless",
-      "options": {
-        "baseURL": "https://api.featherless.ai/v1"
-      },
-      "models": {
-        "zai-org/GLM-5.2": {
-          "name": "GLM-5.2"
-        }
-      }
-    },
-
-    "j3gb": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "J3GB",
-      "options": {
-        "baseURL": "https://vip.j3gb.com/v1"
-      },
-      "models": {
-        "gpt-5.5": {
-          "name": "GPT-5.5"
-        },
-        "gpt-5.4": {
-          "name": "GPT-5.4"
-        },
-        "gpt-5.4-mini": {
-          "name": "GPT-5.4 Mini"
-        }
-      }
-    },
-
-    "lightning": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Lightning AI",
-      "options": {
-        "baseURL": "https://lightning.ai/api/v1"
-      },
-      "models": {
-        "openai/gpt-5.4-2026-03-05": {}
-      }
-    },
-
-    "Openfrog": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Openfrog",
-      "options": {
-        "baseURL": "https://openfrog.io/v1"
-      },
-      "models": {
-        "glm-5.2": {
-          "name": "GLM-5.2"
-        }
-      }
-    },
-
-    "Kynovra": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Kynovra",
-      "options": {
-        "baseURL": "https://freellmapi-production-6f5a.up.railway.app/v1"
-      },
-      "models": {
-        "morph-glm52-744b": {
-          "name": "GLM-5.2"
-        },
-        "moonshotai/Kimi-K2.6": {
-          "name": "Kimi-K2.6"
-        }
-      }
-    },
-
-    "Iamhc": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Iamhc",
-      "options": {
-        "baseURL": "https://api.iamhc.cn/v1"
-      },
-      "models": {
-        "Glm-5.2": {
-          "name": "GLM-5.2"
-        },
-        "Qwen3.5-397B-A17B": {
-          "name": "QWEN-3.5"
-        }
-      }
-    },
-
-    "dahl": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Dahl",
-      "options": {
-        "baseURL": "https://inference.dahl.global/v1"
-      },
-      "models": {
-        "moonshotai/Kimi-K2.6": {
-          "name": "Kimi-K2.6",
-          "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
-          }
-        }
-      }
-    },
-
-    "infercon": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Infercon",
-      "options": {
-        "baseURL": "https://api.infercom.ai/v1"
-      },
-      "models": {
-        "MiniMax-M2.7": {
-          "name": "MiniMax-M2.7"
-        }
-      }
-    },
-
-    "tokenbay": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Tokenbay",
-      "options": {
-        "baseURL": "https://api.tokenbay.com/v1"
-      },
-      "models": {
-        "glm-5.2": {
-          "name": "GLM-5.2"
-        },
-        "gpt-5.4": {
-          "name": "GPT-5.4"
-        }
-      }
-    },
-
     "hcnsec": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "HCNSEC",
@@ -200,22 +34,109 @@
       },
       "models": {
         "glm-5.2": {
-          "name": "GLM-5.2"
+          "name": "GLM-5.2",
+          "tool_call": true,
+          "temperature": true,
+          "attachment": true,
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
         }
       }
     },
-
-    "kieai": {
+    "tokenrouter": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "KIE-AI",
+      "name": "TokenRouter",
       "options": {
-        "baseURL": "https://api.kie.ai/codex/v1/responses"
+        "baseURL": "https://api.tokenrouter.com/v1"
       },
       "models": {
-        "gpt-5-5-openai-resp": {
-          "name": "GPT-5.2"
+        "z-ai/glm-5.2-free": {
+          "name": "GLM-5.2",
+          "tool_call": true,
+          "temperature": true,
+          "attachment": true,
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
         }
       }
+    }
+  },
+  "mcp": {
+    "nextjs-devtools": {
+      "type": "local",
+      "command": [
+        "/home/victorsouza/.nvm/versions/node/v24.14.1/bin/node",
+        "/home/victorsouza/.nvm/versions/node/v24.14.1/lib/node_modules/npm/bin/npx-cli.js",
+        "-y",
+        "next-devtools-mcp"
+      ],
+      "environment": {
+        "PATH": "/home/victorsouza/.nvm/versions/node/v24.14.1/bin:/home/victorsouza/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      },
+      "enabled": true,
+      "timeout": 30000
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true,
+      "timeout": 30000
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "/home/victorsouza/.nvm/versions/node/v24.14.1/bin/node",
+        "/home/victorsouza/.nvm/versions/node/v24.14.1/lib/node_modules/npm/bin/npx-cli.js",
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "environment": {
+        "PATH": "/home/victorsouza/.nvm/versions/node/v24.14.1/bin:/home/victorsouza/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      },
+      "enabled": true,
+      "timeout": 30000
+    },
+    "docker": {
+      "type": "local",
+      "command": [
+        "/home/victorsouza/.nvm/versions/node/v24.14.1/bin/node",
+        "/home/victorsouza/.nvm/versions/node/v24.14.1/lib/node_modules/npm/bin/npx-cli.js",
+        "-y",
+        "@hypnosis/docker-mcp-server"
+      ],
+      "environment": {
+        "PATH": "/home/victorsouza/.nvm/versions/node/v24.14.1/bin:/home/victorsouza/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "DOCKER_MCP_AUTO_DISCOVER": "true",
+        "DOCKER_MCP_MASK_SECRETS": "true"
+      },
+      "enabled": true,
+      "timeout": 30000
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "enabled": true,
+      "timeout": 30000
+    },
+    "vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com",
+      "enabled": true,
+      "timeout": 30000
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp",
+      "enabled": true,
+      "timeout": 30000
     }
   }
 }

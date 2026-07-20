@@ -82,7 +82,7 @@ Deno.serve(async (request) => {
       provider,
     });
 
-    const output = result.text;
+    const output = (result.text || result.reasoning || "").trim();
 
     if (!output.trim()) {
       return jsonResponse({
@@ -134,15 +134,15 @@ function resolveSafeConnectionErrorMessage({
   isRateLimitError: boolean;
 }) {
   if (isBillingSetupError) {
-    return "O modelo selecionado exige créditos pagos no SiliconFlow. Configure o billing ou selecione um modelo disponível no plano atual.";
+    return "O modelo selecionado exige créditos pagos no AI Gateway. Configure o billing ou selecione um modelo disponível no plano atual.";
   }
 
   if (isRateLimitError) {
-    return "O limite temporário do free tier foi atingido. Aguarde alguns minutos ou adicione créditos pagos para remover essa restrição.";
+    return "O limite temporário do AI Gateway foi atingido. Aguarde alguns minutos ou adicione créditos pagos para remover essa restrição.";
   }
 
   if (isGatewayOperationError) {
-    return "O modelo selecionado não está liberado para a configuração atual do SiliconFlow. Verifique o plano, os créditos e o acesso ao modelo.";
+    return "O modelo selecionado não está liberado para a configuração atual do AI Gateway. Verifique o plano, os créditos e o acesso ao modelo.";
   }
 
   return "Falha segura no teste de conexão.";

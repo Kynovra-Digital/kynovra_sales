@@ -1,12 +1,5 @@
-import type { ReactNode } from "react";
-import { type BreadcrumbItem, Breadcrumbs } from "./breadcrumbs";
-
-type PageHeaderProps = {
-  title: string;
-  description?: string;
-  breadcrumbs?: BreadcrumbItem[];
-  actions?: ReactNode;
-};
+import type { PageHeaderProps } from "@/types/layout";
+import { Breadcrumbs } from "./breadcrumbs";
 
 export function PageHeader({
   title,

@@ -12,12 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-type FunnelStep = {
-  caption: string;
-  label: string;
-  value: string;
-};
+import type { FunnelStep } from "@/types/dashboard";
 
 const stepIcons = [
   Eye,

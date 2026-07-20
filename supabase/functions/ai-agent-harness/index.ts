@@ -808,7 +808,7 @@ async function callGatewayModel(
     inputTokens: result.inputTokens,
     model: settings.model_id,
     outputTokens: result.outputTokens,
-    text: result.text.trim(),
+    text: (result.text || result.reasoning || "").trim(),
   };
 }
 

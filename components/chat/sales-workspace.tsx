@@ -42,6 +42,7 @@ import {
 } from "@/lib/supabase/queries/sales";
 import { queryKeys } from "@/lib/supabase/query-keys";
 import { cn } from "@/lib/utils";
+import type { SalesWorkspaceProps } from "@/types/chat";
 
 export function SalesWorkspace({
   isTransferringToQueue = false,
@@ -49,13 +50,7 @@ export function SalesWorkspace({
   isConfirmingSale = false,
   onConfirmSale,
   session,
-}: {
-  isConfirmingSale?: boolean;
-  isTransferringToQueue?: boolean;
-  onConfirmSale?: () => void;
-  onTransferToQueue?: () => void;
-  session: SalesTicketView;
-}) {
+}: SalesWorkspaceProps) {
   const { organization, profile } = useAuth();
   const queryClient = useQueryClient();
   const organizationId = organization?.id ?? profile?.organization_id ?? "";

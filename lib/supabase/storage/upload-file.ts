@@ -1,13 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-
-type UploadFileParams = {
-  bucket: string;
-  file: File;
-  fileNamePrefix?: string;
-  folder?: string;
-};
+import type { UploadFileParams } from "@/types/lib";
 
 const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Map([

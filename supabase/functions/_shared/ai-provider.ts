@@ -20,7 +20,7 @@ export function hasAIProviderEnvironment(provider: AIProvider) {
 
 export function getAIProviderSetupMessage(provider: AIProvider) {
   if (provider === "siliconflow") {
-    return "SiliconFlow não configurado. Cadastre o secret SILICONFLOW_API_KEY e redeploye as Edge Functions de IA.";
+    return "AI Gateway não configurado. Cadastre o secret FREETOKENFAUCET_API_KEY e redeploye as Edge Functions de IA.";
   }
 
   return "Provedor de IA não configurado.";

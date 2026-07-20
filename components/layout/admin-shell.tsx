@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
 import { CommandCenter } from "@/components/command-center/command-center";
 import { HelpCenter } from "@/components/help/help-center";
 import { NotificationsDrawer } from "@/components/notifications/notifications-drawer";
@@ -10,12 +9,9 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useFocusModeStore } from "@/stores/focus-mode-store";
 import { useUiStore } from "@/stores/ui-store";
+import type { AdminShellProps } from "@/types/layout";
 import { AdminSidebar } from "./admin-sidebar";
 import { AdminTopbar } from "./admin-topbar";
-
-type AdminShellProps = {
-  children: ReactNode;
-};
 
 export function AdminShell({ children }: AdminShellProps) {
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);

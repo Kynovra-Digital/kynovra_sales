@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { submitPublicSessionFeedback } from "@/lib/supabase/queries/public";
 import { cn } from "@/lib/utils";
+import type { SessionFeedbackProps } from "@/types/public";
 
 const QUESTIONS = [
   {
@@ -23,11 +24,6 @@ const QUESTIONS = [
     label: "O tempo de resposta foi bom?",
   },
 ];
-
-type SessionFeedbackProps = {
-  publicToken: string;
-  sessionType: "sales" | "support";
-};
 
 export function SessionFeedback({
   publicToken,
